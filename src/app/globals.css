@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    overflow-x: hidden;
+  }
+  ::selection {
+    @apply bg-primary text-ink;
+  }
+  :focus-visible {
+    outline: 2px solid #111111;
+    outline-offset: 2px;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  .container-content {
+    @apply mx-auto max-w-content px-5 md:px-8 lg:px-10;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-none bg-ink px-7 py-3.5 text-sm font-medium tracking-wide text-paper transition-all duration-300 hover:bg-primary hover:text-ink;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-none border border-ink bg-transparent px-7 py-3.5 text-sm font-medium tracking-wide text-ink transition-all duration-300 hover:bg-ink hover:text-paper;
+  }
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-widest2 text-ink-400;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
