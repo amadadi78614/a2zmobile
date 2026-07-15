@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 const checkoutSchema = z.object({
   items: z.array(
     z.object({
-      product_id: z.string().uuid(),
+      sku: z.string().trim().min(2).max(120),
       quantity: z.number().int().min(1).max(20),
       colorway: z.string().max(80).optional().nullable(),
     })
@@ -33,12 +33,10 @@ export async function POST(request: Request) {
   try {
     const payload = checkoutSchema.parse(await request.json());
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+      return NextResponse.json({ error: "Please sign in before checking out." }, { status: 401 });
     }
 
     const { data, error } = await supabase.rpc("create_checkout_order", {
@@ -53,19 +51,13 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error("create_checkout_order failed", error);
-      return NextResponse.json(
-        { error: error.message || "Order could not be created" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: error.message || "Order could not be created" }, { status: 400 });
     }
 
     return NextResponse.json({ order: data }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Invalid checkout information", details: error.flatten() },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Please check your checkout information.", details: error.flatten() }, { status: 400 });
     }
 
     console.error("Order API error", error);
