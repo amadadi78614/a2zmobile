@@ -1,22 +1,34 @@
 import Link from "next/link";
 import { Package, MapPin, Heart } from "lucide-react";
-import { mockOrders, mockAddresses } from "@/lib/data/orders";
-import { formatZAR } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/server";
 
-export default function AccountDashboardPage() {
-  const latestOrder = mockOrders[0];
+export default async function AccountDashboardPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  let orderCount = 0;
+  let addressCount = 0;
+
+  if (user) {
+    const [ordersResult, addressesResult] = await Promise.all([
+      supabase.from("orders").select("id", { count: "exact", head: true }).eq("customer_id", user.id),
+      supabase.from("addresses").select("id", { count: "exact", head: true }).eq("customer_id", user.id),
+    ]);
+    orderCount = ordersResult.count ?? 0;
+    addressCount = addressesResult.count ?? 0;
+  }
 
   return (
     <div className="flex flex-col gap-8">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Link href="/account/orders" className="flex flex-col gap-2 border border-line p-5 hover:border-ink">
           <Package size={18} className="text-secondary" />
-          <span className="text-2xl font-semibold">{mockOrders.length}</span>
+          <span className="text-2xl font-semibold">{orderCount}</span>
           <span className="text-sm text-ink-400">Orders placed</span>
         </Link>
         <Link href="/account/addresses" className="flex flex-col gap-2 border border-line p-5 hover:border-ink">
           <MapPin size={18} className="text-secondary" />
-          <span className="text-2xl font-semibold">{mockAddresses.length}</span>
+          <span className="text-2xl font-semibold">{addressCount}</span>
           <span className="text-sm text-ink-400">Saved addresses</span>
         </Link>
         <Link href="/wishlist" className="flex flex-col gap-2 border border-line p-5 hover:border-ink">
@@ -28,25 +40,10 @@ export default function AccountDashboardPage() {
 
       <div>
         <h2 className="text-sm font-semibold uppercase tracking-wide">Most Recent Order</h2>
-        <div className="mt-4 flex flex-col gap-4 border border-line p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-medium">{latestOrder.orderNumber}</p>
-            <p className="mt-1 text-xs text-ink-400">
-              Placed {new Date(latestOrder.placedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" })}
-            </p>
-          </div>
-          <div className="flex items-center gap-6">
-            <span className="text-sm font-semibold">{formatZAR(latestOrder.total)}</span>
-            <span className="border border-line px-3 py-1.5 text-xs font-medium capitalize">
-              {latestOrder.status}
-            </span>
-            <Link
-              href={`/account/orders/${latestOrder.orderNumber}`}
-              className="text-sm font-medium underline-offset-4 hover:underline"
-            >
-              View
-            </Link>
-          </div>
+        <div className="mt-4 border border-line p-8 text-center">
+          <p className="text-sm font-medium">You have not placed any orders yet.</p>
+          <p className="mt-2 text-sm text-ink-400">Your confirmed purchases will appear here.</p>
+          <Link href="/shop" className="btn-primary mt-6 inline-flex">Start Shopping</Link>
         </div>
       </div>
     </div>
