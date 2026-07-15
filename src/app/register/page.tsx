@@ -12,16 +12,29 @@ export default function RegisterPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
+
     setLoading(true);
     setError(null);
+
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signUp({
-        email: form.email,
+      const email = form.email.trim().toLowerCase();
+      const fullName = form.name.trim();
+      const emailRedirectTo = `${window.location.origin}/auth/callback?next=/account`;
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
         password: form.password,
-        options: { data: { full_name: form.name } },
+        options: {
+          data: { full_name: fullName },
+          emailRedirectTo,
+        },
       });
+
       if (error) throw error;
+      if (!data.user) throw new Error("Registration could not be completed.");
+      setForm((current) => ({ ...current, email }));
       setSuccess(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed. Please try again.");
@@ -33,9 +46,11 @@ export default function RegisterPage() {
   if (success) {
     return (
       <div className="container-content flex min-h-[70vh] items-center justify-center py-16 text-center">
-        <div>
+        <div className="max-w-md">
           <h1 className="text-2xl font-semibold">Check your email</h1>
-          <p className="mt-2 text-sm text-ink-400">We&apos;ve sent a confirmation link to {form.email}.</p>
+          <p className="mt-2 text-sm text-ink-400">
+            We&apos;ve sent a confirmation link to {form.email}. After confirming, you&apos;ll be taken to your A2Z account.
+          </p>
         </div>
       </div>
     );
@@ -50,33 +65,15 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
           <div>
             <label className="text-xs font-medium text-ink-500">Full name</label>
-            <input
-              required
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="mt-2 w-full border border-line px-4 py-3 text-sm outline-none focus:border-ink"
-            />
+            <input required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="mt-2 w-full border border-line px-4 py-3 text-sm outline-none focus:border-ink" />
           </div>
           <div>
             <label className="text-xs font-medium text-ink-500">Email</label>
-            <input
-              type="email"
-              required
-              value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              className="mt-2 w-full border border-line px-4 py-3 text-sm outline-none focus:border-ink"
-            />
+            <input type="email" required value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} className="mt-2 w-full border border-line px-4 py-3 text-sm outline-none focus:border-ink" />
           </div>
           <div>
             <label className="text-xs font-medium text-ink-500">Password</label>
-            <input
-              type="password"
-              required
-              minLength={8}
-              value={form.password}
-              onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-              className="mt-2 w-full border border-line px-4 py-3 text-sm outline-none focus:border-ink"
-            />
+            <input type="password" required minLength={8} value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} className="mt-2 w-full border border-line px-4 py-3 text-sm outline-none focus:border-ink" />
           </div>
 
           {error && <p className="text-xs text-secondary">{error}</p>}
@@ -88,9 +85,7 @@ export default function RegisterPage() {
 
         <p className="mt-6 text-center text-sm text-ink-400">
           Already have an account?{" "}
-          <Link href="/login" className="font-medium text-ink underline-offset-4 hover:underline">
-            Sign in
-          </Link>
+          <Link href="/login" className="font-medium text-ink underline-offset-4 hover:underline">Sign in</Link>
         </p>
       </div>
     </div>
