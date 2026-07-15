@@ -3,23 +3,27 @@ import { updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
   const { response, user } = await updateSession(request);
+  const pathname = request.nextUrl.pathname;
 
-  const isAdminRoute = request.nextUrl.pathname.startsWith("/admin");
-  const isAdminLoginRoute = request.nextUrl.pathname === "/admin/login";
+  const isAdminRoute = pathname.startsWith("/admin");
+  const isAdminLoginRoute = pathname === "/admin/login";
+  const isAccountRoute = pathname.startsWith("/account");
 
   if (isAdminRoute && !isAdminLoginRoute && !user) {
     const loginUrl = new URL("/admin/login", request.url);
-    loginUrl.searchParams.set("next", request.nextUrl.pathname);
+    loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Role/active-admin checks happen in the admin layout (Server Component),
-  // which has full DB access — middleware only gates "is there a session at
-  // all" to keep the edge check cheap. Do not treat this middleware as the
-  // sole authorization boundary; every admin server action re-checks role.
+  if (isAccountRoute && !user) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
+    return NextResponse.redirect(loginUrl);
+  }
+
   return response;
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/account/:path*"],
 };
