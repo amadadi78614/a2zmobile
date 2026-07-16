@@ -1,6 +1,6 @@
 "use client";
 
-import { Grid2X2, List } from "lucide-react";
+import { Grid2X2, List, SlidersHorizontal } from "lucide-react";
 
 export function SortBar({
   count,
@@ -8,16 +8,34 @@ export function SortBar({
   onSortChange,
   view,
   onViewChange,
+  onOpenFilters,
+  activeFilterCount,
 }: {
   count: number;
   sort: string;
   onSortChange: (v: string) => void;
   view: "grid" | "list";
   onViewChange: (v: "grid" | "list") => void;
+  onOpenFilters: () => void;
+  activeFilterCount: number;
 }) {
   return (
     <div className="flex items-center justify-between border-b border-line pb-5">
-      <span className="text-sm text-ink-400">{count} products</span>
+      <div className="flex items-center gap-4">
+        <button
+          onClick={onOpenFilters}
+          className="flex items-center gap-2 border border-line px-3 py-2 text-sm font-medium text-ink lg:hidden"
+        >
+          <SlidersHorizontal size={14} />
+          Filters
+          {activeFilterCount > 0 && (
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-[10px] text-paper">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+        <span className="text-sm text-ink-400">{count} products</span>
+      </div>
       <div className="flex items-center gap-4">
         <select
           value={sort}

@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
-import { Heart, ShoppingBag, User, Menu, X, ChevronDown, Search } from "lucide-react";
+import { Heart, ShoppingBag, User, Menu, X, ChevronDown, Search, MessageCircle } from "lucide-react";
 import { categories } from "@/lib/data/categories";
 import { useCartStore } from "@/lib/store/cart";
 import { useWishlistStore } from "@/lib/store/wishlist";
 import { cn } from "@/lib/utils";
 import { HeaderSearch } from "@/components/layout/HeaderSearch";
+import { createClient } from "@/lib/supabase/client";
 
 const navLinks = [
   { label: "Shop", href: "/shop" },
@@ -22,11 +23,34 @@ export function Header() {
   const [megaOpen, setMegaOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  // `undefined` = still checking, `null` = signed out, object = signed in. Read-only use of the
+  // existing Supabase client (same pattern already used in login/checkout) — no auth logic changed.
+  const [user, setUser] = useState<{ firstName: string } | null | undefined>(undefined);
   const cartCount = useCartStore((s) => s.lines.reduce((n, l) => n + l.quantity, 0));
   const wishlistCount = useWishlistStore((s) => s.productIds.length);
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      const authUser = data.user;
+      setUser(
+        authUser
+          ? { firstName: (authUser.user_metadata?.full_name as string | undefined)?.split(" ")[0] || "Account" }
+          : null
+      );
+    });
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(
+        session?.user
+          ? { firstName: (session.user.user_metadata?.full_name as string | undefined)?.split(" ")[0] || "Account" }
+          : null
+      );
+    });
+    return () => subscription.subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -79,6 +103,41 @@ export function Header() {
         </div>
 
         <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-8 pt-4">
+          <Link
+            href={user ? "/account" : "/login"}
+            onClick={() => setMobileOpen(false)}
+            className="mb-6 flex items-center justify-between border border-line px-4 py-3.5"
+          >
+            <span className="flex items-center gap-3">
+              <User size={18} />
+              <span className="text-sm font-medium">{user ? `Hi, ${user.firstName}` : "Sign In"}</span>
+            </span>
+            {!user && <span className="text-xs text-ink-400">or Register</span>}
+          </Link>
+
+          <div className="mb-6 grid grid-cols-2 gap-3">
+            <Link
+              href="/wishlist"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center justify-between border border-line px-4 py-3.5"
+            >
+              <span className="flex items-center gap-2 text-sm font-medium">
+                <Heart size={16} /> Wishlist
+              </span>
+              {wishlistCount > 0 && <span className="text-xs text-ink-400">{wishlistCount}</span>}
+            </Link>
+            <Link
+              href="/cart"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center justify-between border border-line px-4 py-3.5"
+            >
+              <span className="flex items-center gap-2 text-sm font-medium">
+                <ShoppingBag size={16} /> Cart
+              </span>
+              {cartCount > 0 && <span className="text-xs text-ink-400">{cartCount}</span>}
+            </Link>
+          </div>
+
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-ink/45">
             Categories
           </p>
@@ -110,6 +169,13 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
+            <Link
+              href="/contact"
+              onClick={() => setMobileOpen(false)}
+              className="flex min-h-12 items-center gap-2 border-b border-line py-3 text-base font-medium text-ink"
+            >
+              <MessageCircle size={16} className="text-secondary" /> Contact &amp; WhatsApp
+            </Link>
           </div>
         </nav>
       </aside>
@@ -126,11 +192,12 @@ export function Header() {
             <div className="flex gap-6">
               <Link href="/track-order" className="hover:text-primary">Track Order</Link>
               <Link href="/contact" className="hover:text-primary">Store Locator</Link>
+              <Link href="/faq" className="hover:text-primary">Help</Link>
             </div>
           </div>
         </div>
 
-        <div className="container-content flex items-center gap-6 py-4">
+        <div className="container-content flex items-center gap-5 py-4 lg:gap-8">
           <button
             type="button"
             className="md:hidden"
@@ -154,11 +221,22 @@ export function Header() {
               onMouseEnter={() => setMegaOpen(true)}
               onMouseLeave={() => setMegaOpen(false)}
             >
-              <button className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-ink hover:text-secondary">
+              <button
+                className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-ink hover:text-secondary"
+                onFocus={() => setMegaOpen(true)}
+                aria-expanded={megaOpen}
+                aria-haspopup="true"
+              >
                 Categories <ChevronDown size={14} />
               </button>
               {megaOpen && (
-                <div className="absolute left-0 top-full w-[560px] animate-fadeUp border border-line bg-paper p-6 shadow-premium">
+                <div
+                  className="absolute left-0 top-full w-[560px] animate-fadeUp border border-line bg-paper p-6 shadow-premium"
+                  onFocus={() => setMegaOpen(true)}
+                  onBlur={(e) => {
+                    if (!e.currentTarget.contains(e.relatedTarget)) setMegaOpen(false);
+                  }}
+                >
                   <div className="grid grid-cols-2 gap-x-8 gap-y-4">
                     {categories.map((category) => (
                       <Link
@@ -187,13 +265,28 @@ export function Header() {
 
           <HeaderSearch />
 
-          <div className="ml-auto flex items-center gap-5 md:ml-0">
+          <div className="ml-auto flex items-center gap-5 md:ml-0 lg:gap-6">
             <Link href="/search" className="md:hidden" aria-label="Search">
               <Search size={20} />
             </Link>
-            <Link href="/account" className="hidden sm:block" aria-label="Account">
-              <User size={20} />
+
+            <Link
+              href={user ? "/account" : "/login"}
+              className="hidden flex-col leading-tight sm:flex"
+              aria-label={user ? "Account" : "Sign in"}
+            >
+              <span className="text-[10px] text-ink-400">{user ? `Hi, ${user.firstName}` : "Welcome"}</span>
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-ink">
+                <User size={16} />
+                {user ? "Account" : "Sign In"}
+              </span>
             </Link>
+            {user === null && (
+              <Link href="/register" className="hidden text-xs font-medium text-ink-500 hover:text-ink lg:block">
+                Register
+              </Link>
+            )}
+
             <Link href="/wishlist" className="relative" aria-label="Wishlist">
               <Heart size={20} />
               {wishlistCount > 0 && (

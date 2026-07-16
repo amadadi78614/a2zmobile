@@ -58,7 +58,7 @@ export function ProductCard({ product }: { product: Product }) {
 
         <button
           onClick={() => addItem(product.id)}
-          className="absolute inset-x-0 bottom-0 translate-y-full bg-ink py-3 text-center text-xs font-medium uppercase tracking-wide text-paper transition-transform duration-300 ease-out group-hover:translate-y-0"
+          className="absolute inset-x-0 bottom-0 translate-y-0 bg-ink py-3 text-center text-xs font-medium uppercase tracking-wide text-paper transition-transform duration-300 ease-out md:translate-y-full md:group-hover:translate-y-0 md:group-focus-within:translate-y-0"
         >
           Add to Cart
         </button>

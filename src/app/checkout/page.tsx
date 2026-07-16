@@ -44,12 +44,21 @@ export default function CheckoutPage() {
   const [deliveryZone, setDeliveryZone] = useState<DeliveryZone>("local");
   const [address, setAddress] = useState({ line1: "", line2: "", suburb: "", city: "Mbombela", province: "Mpumalanga", postalCode: "" });
   const [payment, setPayment] = useState<PaymentMethod>("payfast");
+  // The order API always requires a signed-in user (there is no guest checkout) — that's a
+  // backend decision this sprint doesn't change. What changes here is *when* the customer finds
+  // out: previously it only surfaced as a 401 after filling all 4 steps. Now it's checked once,
+  // upfront, before the form renders at all.
+  const [authStatus, setAuthStatus] = useState<"checking" | "authed" | "guest">("checking");
 
   useEffect(() => {
     async function loadCustomer() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setAuthStatus("guest");
+        return;
+      }
+      setAuthStatus("authed");
 
       const { data: profile } = await supabase
         .from("profiles")
@@ -167,6 +176,54 @@ export default function CheckoutPage() {
       <div className="container-content flex flex-col items-center py-24 text-center">
         <h1 className="text-2xl font-semibold">Your cart is empty</h1>
         <Link href="/shop" className="btn-primary mt-8">Continue Shopping</Link>
+      </div>
+    );
+  }
+
+  if (authStatus === "checking") {
+    return (
+      <div className="container-content flex flex-col items-center py-24 text-center">
+        <div className="h-8 w-8 animate-pulse rounded-full bg-line" aria-hidden />
+        <p className="mt-4 text-sm text-ink-400">Loading checkout…</p>
+      </div>
+    );
+  }
+
+  if (authStatus === "guest") {
+    return (
+      <div className="container-content py-10 md:py-14">
+        <h1 className="text-2xl font-semibold sm:text-3xl">Secure Checkout</h1>
+        <div className="mt-10 grid grid-cols-1 gap-12 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <div className="border border-line p-8">
+              <h2 className="text-lg font-semibold">Sign in to continue</h2>
+              <p className="mt-3 max-w-md text-sm leading-relaxed text-ink-500">
+                An account is required to check out, so we can attach your order to your order
+                history, delivery tracking and returns. Your cart is saved — nothing will be lost
+                while you sign in or create an account.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link href="/login?next=/checkout" className="btn-primary">Sign In</Link>
+                <Link href="/register?next=/checkout" className="btn-secondary">Create Account</Link>
+              </div>
+            </div>
+          </div>
+
+          <aside className="h-fit border border-line p-5 lg:sticky lg:top-28">
+            <h2 className="text-sm font-semibold uppercase tracking-wide">Order summary</h2>
+            <div className="mt-4 flex justify-between text-sm">
+              <span className="text-ink-400">Subtotal</span>
+              <span className="font-medium">{formatZAR(subtotal)}</span>
+            </div>
+            <div className="mt-2 flex justify-between text-sm">
+              <span className="text-ink-400">Delivery</span>
+              <span className="font-medium">Calculated after sign in</span>
+            </div>
+            <p className="mt-6 text-xs text-ink-400">
+              {items.length} item{items.length === 1 ? "" : "s"} waiting in your cart.
+            </p>
+          </aside>
+        </div>
       </div>
     );
   }
