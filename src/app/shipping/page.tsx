@@ -9,22 +9,22 @@ export const metadata: Metadata = {
 
 const options = [
   {
-    icon: Truck,
-    title: "Mbombela local delivery",
-    price: "R75",
-    body: "Same-day delivery for orders placed before 1pm on a business day. Orders placed after 1pm are delivered the next working day.",
-  },
-  {
     icon: MapPinned,
-    title: "National courier delivery",
+    title: "Nationwide courier delivery",
     price: "R120",
     body: "Delivered by our courier partner within 2–4 working days of dispatch, tracked door-to-door anywhere in South Africa.",
+  },
+  {
+    icon: Truck,
+    title: "Local same-day delivery",
+    price: "R75",
+    body: "Available in our Mbombela/Nelspruit local zone for orders placed before 1pm on a business day. Orders placed after 1pm are delivered the next working day.",
   },
   {
     icon: Store,
     title: "Store collection",
     price: "Free",
-    body: "Collect from our Mbombela store once your order is confirmed. We'll notify you by SMS or email the moment it's ready.",
+    body: "Collect once your order is confirmed. We'll notify you by SMS or email the moment it's ready.",
   },
 ];
 
@@ -62,9 +62,9 @@ export default function ShippingPage() {
           <div>
             <h2 className="font-display text-lg font-semibold">Order cut-off times</h2>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-500">
-              Same-day Mbombela delivery applies to orders placed before 1pm on a business day.
-              Orders placed after the cut-off, or on weekends and public holidays, are processed
-              the next working day.
+              Same-day delivery in our local Mbombela/Nelspruit zone applies to orders placed
+              before 1pm on a business day. Nationwide courier orders placed after the cut-off, or
+              on weekends and public holidays, are processed the next working day.
             </p>
           </div>
         </div>
@@ -84,9 +84,9 @@ export default function ShippingPage() {
       <div className="mt-10 border-t border-line pt-10">
         <h2 className="font-display text-lg font-semibold">Delivery areas</h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-500">
-          Local same-day delivery covers Mbombela and Nelspruit. National courier delivery covers
-          all major South African towns and cities. If you&apos;re unsure whether your area is
-          covered, message us on WhatsApp from the{" "}
+          Nationwide courier delivery covers all major South African towns and cities.
+          Same-day local delivery is also available in our Mbombela/Nelspruit zone. If
+          you&apos;re unsure whether your area is covered, message us on WhatsApp from the{" "}
           <Link href="/contact" className="font-medium text-ink underline underline-offset-4">
             contact page
           </Link>{" "}

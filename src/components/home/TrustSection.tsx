@@ -8,8 +8,8 @@ const items = [
   },
   {
     icon: Truck,
-    title: "Fast Delivery",
-    body: "Same-day delivery in Mbombela, nationwide courier within 2–4 working days.",
+    title: "Fast Nationwide Delivery",
+    body: "2–4 working day courier delivery across South Africa, with same-day delivery available in our local zone.",
   },
   {
     icon: RotateCcw,

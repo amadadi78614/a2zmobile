@@ -5,14 +5,14 @@ import { ShieldCheck, MapPin, Users, Truck } from "lucide-react";
 export const metadata: Metadata = {
   title: "About A2Z Mobile & Computer Services",
   description:
-    "A2Z Mobile & Computer Services is a Mbombela-based accessories retailer specialising in genuine Bluetooth speakers, phone covers, chargers, power banks, fans, and hookah essentials.",
+    "A2Z Mobile & Computer Services is a South African ecommerce brand specialising in genuine Bluetooth speakers, phone covers, chargers, power banks, fans, and hookah essentials, with fast nationwide delivery.",
 };
 
 const stats = [
-  { icon: MapPin, label: "Based in Mbombela", body: "Serving Mbombela, Nelspruit and the wider Mpumalanga area, with nationwide courier delivery." },
-  { icon: ShieldCheck, label: "Genuine stock only", body: "Every product is sourced through authorised local distributors — never grey-market imports." },
+  { icon: MapPin, label: "South African Owned", body: "Proudly South African, shipping nationwide with a local base in Mbombela, Mpumalanga." },
+  { icon: ShieldCheck, label: "Genuine Products", body: "Every product is sourced through authorised local distributors — never grey-market imports." },
   { icon: Users, label: "Real people, real support", body: "Speak to someone who actually knows the products, in-store or on WhatsApp." },
-  { icon: Truck, label: "Fast local delivery", body: "Same-day delivery in Mbombela, 2–4 working days nationwide." },
+  { icon: Truck, label: "Fast Nationwide Delivery", body: "2–4 working day courier delivery across South Africa, with same-day delivery in our local zone." },
 ];
 
 export default function AboutPage() {
@@ -24,16 +24,16 @@ export default function AboutPage() {
           Mobile &amp; computer accessories, done properly.
         </h1>
         <p className="mt-6 text-sm leading-relaxed text-ink-500 sm:text-base">
-          A2Z Mobile &amp; Computer Services started as a small Mbombela storefront with a simple
-          idea: sell the accessories people actually need — Bluetooth speakers, phone covers,
-          chargers, power banks, fans, hookah essentials, and repair parts — as genuine stock at
-          honest prices, backed by people who understand what they&apos;re selling.
+          A2Z Mobile &amp; Computer Services started with a simple idea: sell the accessories
+          people actually need — Bluetooth speakers, phone covers, chargers, power banks, fans,
+          hookah essentials, and repair parts — as genuine stock at honest prices, backed by
+          people who understand what they&apos;re selling.
         </p>
         <p className="mt-4 text-sm leading-relaxed text-ink-500 sm:text-base">
-          We&apos;ve since taken that same approach online. Every product listed here is stock we
-          actually hold or can get quickly through authorised distributors — not drop-shipped,
-          not grey-market, not guesswork. If we wouldn&apos;t sell it across our own counter, it
-          doesn&apos;t go on the site.
+          Today we&apos;re a South African ecommerce brand, shipping nationwide from our base in
+          Mpumalanga. Every product listed here is stock we actually hold or can get quickly
+          through authorised distributors — not drop-shipped, not grey-market, not guesswork. If
+          we wouldn&apos;t sell it across our own counter, it doesn&apos;t go on the site.
         </p>
       </div>
 

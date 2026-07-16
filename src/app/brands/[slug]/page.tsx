@@ -48,7 +48,7 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
               broken <img>. Swap for real logo art here once supplied. */}
           <h1 className="mt-2 font-display text-4xl font-semibold sm:text-5xl">{brand.name}</h1>
           <p className="mt-4 max-w-xl text-sm leading-relaxed text-ink-500 sm:text-base">
-            {brandDescriptions[brand.slug] ?? `Genuine ${brand.name} products, stocked in Mbombela.`}
+            {brandDescriptions[brand.slug] ?? `Genuine ${brand.name} products, shipped nationwide across South Africa.`}
           </p>
         </div>
       </div>

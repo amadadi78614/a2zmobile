@@ -36,7 +36,7 @@ const slides: Slide[] = [
     eyebrow: "Coming Soon",
     title: ["Premium vaping", "collection."],
     subtitle: "Disposable vapes, pod systems, vape kits and accessories — landing soon.",
-    supportingText: "Premium products. Latest flavours. Local stock.",
+    supportingText: "Premium products. Latest flavours. Nationwide delivery.",
     primaryCta: { label: "Get notified on WhatsApp", href: "https://wa.me/27000000000?text=" + encodeURIComponent("Hi A2Z, please let me know when the vape range launches.") },
     secondaryCta: { label: "Shop What's Live Now", href: "/shop" },
     visual: "vape",

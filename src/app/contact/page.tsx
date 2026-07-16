@@ -3,7 +3,7 @@ import { MapPin, Phone, Mail, MessageCircle, Clock } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Contact Us",
-  description: "Get in touch with A2Z Mobile & Computer Services — Mbombela, South Africa.",
+  description: "Get in touch with A2Z Mobile & Computer Services — South Africa.",
 };
 
 // NOTE: phone/WhatsApp number and street address below are placeholders matching the

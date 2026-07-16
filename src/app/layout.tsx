@@ -21,11 +21,11 @@ import { Footer } from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
   title: {
-    default: "A2Z Mobile & Computer Services | Mbombela, South Africa",
+    default: "A2Z Mobile & Computer Services | South Africa",
     template: "%s | A2Z Mobile & Computer Services",
   },
   description:
-    "Bluetooth speakers, phone covers, chargers, power banks, USB fans, and hookah essentials — genuine stock with local support in Mbombela, South Africa.",
+    "Bluetooth speakers, phone covers, chargers, power banks, USB fans, and hookah essentials — genuine products, fast nationwide delivery across South Africa.",
   metadataBase: new URL("https://a2z.co.za"),
 };
 

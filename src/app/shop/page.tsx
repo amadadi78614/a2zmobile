@@ -10,6 +10,8 @@ import { MobileFilterDrawer } from "@/components/shop/MobileFilterDrawer";
 import { SortBar } from "@/components/shop/SortBar";
 import { PRICE_BANDS } from "@/components/shop/FilterPanel";
 import type { AvailabilityFilter } from "@/components/shop/FilterPanel";
+import { taxonomy } from "@/lib/data/taxonomy";
+import { PillarCards } from "@/components/shop/PillarCards";
 
 // Filters live in the URL (?category=&brand=&price=&availability=) rather than local-only state,
 // so results are shareable, survive a refresh, and work with the back button — e.g.
@@ -120,7 +122,14 @@ function ShopContent() {
     <div className="container-content py-10 md:py-14">
       <div className="mb-8">
         <span className="eyebrow">Shop</span>
-        <h1 className="mt-2 text-3xl font-semibold">All Products</h1>
+        <h1 className="mt-2 text-3xl font-semibold">Shop by Category</h1>
+      </div>
+
+      <PillarCards pillars={taxonomy} />
+
+      <div className="mb-8 mt-16 border-t border-line pt-10">
+        <span className="eyebrow">Browse Everything</span>
+        <h2 className="mt-2 text-2xl font-semibold">All Products</h2>
       </div>
 
       <div className="flex gap-10">

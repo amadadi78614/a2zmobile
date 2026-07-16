@@ -6,6 +6,46 @@ export type Category = {
   productCount: number;
 };
 
+// ---------- Sprint 2B: pillar/group/subcategory taxonomy ----------
+// An additive presentation/navigation layer on top of the existing flat Category system above.
+// `categorySlug` on Product remains the single source of truth for the original 8 categories and
+// every existing /shop?category=... link, filter, and mega-menu entry — nothing here replaces it.
+// This layer exists so the mega menu, /shop pillar cards, and /shop/[pillar]/[group] landing
+// pages can be driven entirely off data (per the brief's own "future categories should require
+// minimal code changes" requirement) instead of hardcoded JSX.
+
+export type TaxonomyVisualStyle = "dominant" | "dark-premium" | "luxury-premium";
+
+export type Subcategory = {
+  slug: string;
+  name: string;
+};
+
+export type CategoryGroup = {
+  slug: string;
+  name: string;
+  /** lucide-react icon name, resolved by the consuming component's own icon map */
+  icon: string;
+  subcategories: Subcategory[];
+  heroDescription: string;
+  seoTitle: string;
+  seoDescription: string;
+};
+
+export type Pillar = {
+  slug: "mobile-tech" | "vape" | "hookah";
+  name: string;
+  tagline: string;
+  heroDescription: string;
+  seoTitle: string;
+  seoDescription: string;
+  visualStyle: TaxonomyVisualStyle;
+  /** Whether this pillar has any real, orderable inventory yet. Drives empty-state and
+   * noindex behaviour honestly rather than pretending a pillar is live before it is. */
+  isLive: boolean;
+  groups: CategoryGroup[];
+};
+
 export type Brand = {
   id: string;
   slug: string;
@@ -46,6 +86,13 @@ export type Product = {
   compatibleDevices?: string[];
   tags?: string[];
   searchKeywords?: string[];
+  /** Sprint 2B: slugs into the new pillar/group/subcategory taxonomy (src/lib/data/taxonomy.ts).
+   * A product can honestly belong to more than one subcategory (e.g. a GaN wall charger is both
+   * a "Wall Charger" and a "Fast Charger"), hence a list rather than a single slug. Only
+   * populated where a real, defensible match exists — most products currently have none, and
+   * that's fine; they still show at their existing categorySlug level. Purely additive: does not
+   * replace or interact with categorySlug, which remains the source of truth it always was. */
+  subcategorySlugs?: string[];
 };
 
 export type CartLine = {

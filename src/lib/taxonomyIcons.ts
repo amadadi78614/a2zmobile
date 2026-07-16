@@ -1,0 +1,32 @@
+import {
+  Zap,
+  Cable,
+  BatteryCharging,
+  Volume2,
+  ShieldCheck,
+  Car,
+  Laptop,
+  Wifi,
+  HardDrive,
+  Sparkles,
+  Wrench,
+  Wind,
+  Flame,
+  type LucideIcon,
+} from "lucide-react";
+
+export const taxonomyIconMap: Record<string, LucideIcon> = {
+  Zap,
+  Cable,
+  BatteryCharging,
+  Volume2,
+  ShieldCheck,
+  Car,
+  Laptop,
+  Wifi,
+  HardDrive,
+  Sparkles,
+  Wrench,
+  Wind,
+  Flame,
+};

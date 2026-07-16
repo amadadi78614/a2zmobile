@@ -88,7 +88,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <div>
               <h3 className="text-sm font-semibold">Shipping Information</h3>
               <p className="mt-1 text-sm text-ink-400">
-                Same-day in Mbombela if ordered before 1pm. 2–4 working days nationwide. Full details on our{" "}
+                Nationwide courier delivery in 2–4 working days, with same-day delivery available
+                in our local Mbombela/Nelspruit zone if ordered before 1pm. Full details on our{" "}
                 <Link href="/shipping" className="text-ink underline underline-offset-4">shipping page</Link>.
               </p>
             </div>

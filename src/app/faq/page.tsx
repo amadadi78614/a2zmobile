@@ -34,12 +34,12 @@ const groups = [
       {
         question: "How fast is delivery?",
         answer:
-          "Orders placed before 1pm are usually delivered same-day within Mbombela. Nationwide courier delivery typically takes 2–4 working days from dispatch.",
+          "Nationwide courier delivery typically takes 2–4 working days from dispatch. Orders placed before 1pm in our local Mbombela/Nelspruit zone are usually delivered same-day.",
       },
       {
         question: "What does delivery cost?",
         answer:
-          "Local Mbombela delivery is a flat R75. National courier delivery is a flat R120. Store collection is free — you'll be notified by SMS or email as soon as your order is ready to collect.",
+          "Nationwide courier delivery is a flat R120. Local same-day delivery in our Mbombela/Nelspruit zone is a flat R75. Store collection is free — you'll be notified by SMS or email as soon as your order is ready to collect.",
       },
       {
         question: "Can I track my order?",

@@ -39,7 +39,7 @@ const columns = [
 
 const trustStrip = [
   { icon: ShieldCheck, label: "Genuine stock only" },
-  { icon: Truck, label: "Fast Mbombela delivery" },
+  { icon: Truck, label: "Fast Nationwide Delivery" },
   { icon: RotateCcw, label: "7-day returns" },
   { icon: MessageCircle, label: "Real WhatsApp support" },
 ];
@@ -70,8 +70,8 @@ export function Footer() {
             <span className="font-display text-lg font-semibold">A2Z</span>
           </div>
           <p className="mt-4 max-w-xs text-sm text-paper/60">
-            Mobile accessories, speakers, power banks, fans and hookah essentials
-            in Mbombela, South Africa. Genuine stock, honest pricing, local support.
+            Mobile accessories, speakers, power banks, fans and hookah essentials —
+            a South African ecommerce brand. Genuine stock, honest pricing, fast nationwide delivery.
           </p>
           <a
             href="https://wa.me/27000000000"
