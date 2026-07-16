@@ -1,0 +1,444 @@
+diff --git a/src/components/home/HeroCarousel.tsx b/src/components/home/HeroCarousel.tsx
+index 6ba19fa..7653141 100644
+--- a/src/components/home/HeroCarousel.tsx
++++ b/src/components/home/HeroCarousel.tsx
+@@ -2,59 +2,62 @@
+ 
+ import { useCallback, useEffect, useRef, useState } from "react";
+ import Link from "next/link";
+-import Image from "next/image";
+ import { ChevronLeft, ChevronRight } from "lucide-react";
+ import { cn } from "@/lib/utils";
++import { HeroVisual } from "@/components/home/HeroVisual";
+ 
+ type Slide = {
+   eyebrow: string;
+   title: string[];
+   subtitle: string;
++  supportingText?: string;
+   primaryCta: { label: string; href: string };
+   secondaryCta: { label: string; href: string };
+-  image: string;
+-  alt: string;
++  visual: "mobile-tech" | "vape" | "hookah";
++  /** Relative autoplay weight — Mobile & Tech is the primary revenue pillar, so it holds the
++   * stage roughly 60% of a rotation; Vape/Hookah split the rest. Floored at a readable minimum
++   * (3.2s) rather than a literal 20% share, since an unreadable-fast slide isn't "premium." */
++  durationMs: number;
+ };
+ 
+ const slides: Slide[] = [
+   {
+-    eyebrow: "New In · Bluetooth Speakers",
+-    title: ["Sound that", "travels with you."],
++    eyebrow: "Mobile & Tech",
++    title: ["Power your", "digital life."],
+     subtitle:
+-      "JBL Flip 6 and Go 3 — waterproof, portable, and in stock now at Mbombela's trusted accessories specialist.",
+-    primaryCta: { label: "Shop Speakers", href: "/shop?category=bluetooth-speakers" },
+-    secondaryCta: { label: "Shop All", href: "/shop" },
+-    image: "/images/hero-speakers.png",
+-    alt: "Bluetooth speaker lineup at A2Z",
++      "Premium mobile accessories, chargers, power banks, speakers and computer accessories.",
++    supportingText: "Anker · Baseus · JBL · Romoss · and more.",
++    primaryCta: { label: "Shop Mobile & Tech", href: "/shop" },
++    secondaryCta: { label: "Browse Accessories", href: "/shop?category=mobile-accessories" },
++    visual: "mobile-tech",
++    durationMs: 8000,
+   },
+   {
+-    eyebrow: "Never Run Flat",
+-    title: ["Power banks &", "fast chargers."],
+-    subtitle:
+-      "Anker, Baseus, and Romoss — genuine stock with real capacity, not inflated mAh claims.",
+-    primaryCta: { label: "Shop Power", href: "/shop?category=chargers-cables" },
+-    secondaryCta: { label: "Shop All", href: "/shop" },
+-    image: "/images/hero-power.png",
+-    alt: "Power banks and chargers at A2Z",
++    eyebrow: "Coming Soon",
++    title: ["Premium vaping", "collection."],
++    subtitle: "Disposable vapes, pod systems, vape kits and accessories — landing soon.",
++    supportingText: "Premium products. Latest flavours. Local stock.",
++    primaryCta: { label: "Get notified on WhatsApp", href: "https://wa.me/27000000000?text=" + encodeURIComponent("Hi A2Z, please let me know when the vape range launches.") },
++    secondaryCta: { label: "Shop What's Live Now", href: "/shop" },
++    visual: "vape",
++    durationMs: 3200,
+   },
+   {
+-    eyebrow: "Session Ready",
+-    title: ["Hookah sets,", "done right."],
+-    subtitle:
+-      "Glass hookah sets, washable hoses, and coconut shell charcoal — everything for a proper session.",
++    eyebrow: "New In · Hookah",
++    title: ["The ultimate", "hookah experience."],
++    subtitle: "Premium hookahs, flavours, charcoal and accessories.",
++    supportingText: "Everything you need for the perfect session.",
+     primaryCta: { label: "Shop Hookah", href: "/shop?category=hookah" },
+     secondaryCta: { label: "Shop All", href: "/shop" },
+-    image: "/images/hero-hookah.png",
+-    alt: "Hookah sets and accessories at A2Z",
++    visual: "hookah",
++    durationMs: 3200,
+   },
+ ];
+ 
+-const AUTOPLAY_MS = 6000;
+-
+ export function HeroCarousel() {
+   const [index, setIndex] = useState(0);
+   const [paused, setPaused] = useState(false);
+-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
++  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+ 
+   const goTo = useCallback((i: number) => {
+     setIndex((i + slides.length) % slides.length);
+@@ -65,11 +68,11 @@ export function HeroCarousel() {
+   useEffect(() => {
+     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+     if (paused || reduceMotion) return;
+-    timerRef.current = setInterval(() => {
++    timerRef.current = setTimeout(() => {
+       setIndex((i) => (i + 1) % slides.length);
+-    }, AUTOPLAY_MS);
++    }, slides[index].durationMs);
+     return () => {
+-      if (timerRef.current) clearInterval(timerRef.current);
++      if (timerRef.current) clearTimeout(timerRef.current);
+     };
+   }, [paused, index]);
+ 
+@@ -78,54 +81,53 @@ export function HeroCarousel() {
+       className="relative overflow-hidden bg-ink"
+       onMouseEnter={() => setPaused(true)}
+       onMouseLeave={() => setPaused(false)}
++      onFocus={() => setPaused(true)}
++      onBlur={(e) => {
++        if (!e.currentTarget.contains(e.relatedTarget)) setPaused(false);
++      }}
+       role="region"
+       aria-roledescription="carousel"
+-      aria-label="Featured promotions"
++      aria-label="Featured product categories"
+     >
+       <div
+         className="flex w-full transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
+         style={{ transform: `translateX(-${index * 100}%)` }}
+       >
+         {slides.map((slide, i) => (
+-          <div
+-            key={slide.eyebrow}
+-            className="w-full shrink-0"
+-            aria-hidden={i !== index}
+-          >
+-            <div className="container-content grid min-h-[560px] grid-cols-1 items-center gap-10 py-16 md:min-h-[520px] md:grid-cols-2 md:py-0">
+-            <div>
+-              <span className="eyebrow text-primary">{slide.eyebrow}</span>
+-              <h1 className="mt-4 max-w-lg font-display text-4xl font-semibold leading-[1.08] text-paper sm:text-5xl lg:text-6xl">
+-                {slide.title[0]}
+-                <br />
+-                {slide.title[1]}
+-              </h1>
+-              <p className="mt-5 max-w-md text-sm leading-relaxed text-paper/60 sm:text-base">
+-                {slide.subtitle}
+-              </p>
+-              <div className="mt-8 flex flex-wrap gap-4">
+-                <Link href={slide.primaryCta.href} className="btn-primary">
+-                  {slide.primaryCta.label}
+-                </Link>
+-                <Link
+-                  href={slide.secondaryCta.href}
+-                  className="border border-paper/30 px-7 py-3.5 text-sm font-medium tracking-wide text-paper transition-colors hover:border-paper hover:bg-paper hover:text-ink"
+-                >
+-                  {slide.secondaryCta.label}
+-                </Link>
++          <div key={slide.eyebrow} className="w-full shrink-0" aria-hidden={i !== index}>
++            <div className="container-content grid min-h-[560px] grid-cols-1 items-center gap-10 py-16 md:min-h-[560px] md:grid-cols-2 md:py-0">
++              <div className="max-w-lg">
++                <span className="eyebrow text-primary">{slide.eyebrow}</span>
++                <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.08] text-paper sm:text-5xl lg:text-[3.5rem]">
++                  {slide.title[0]}
++                  <br />
++                  {slide.title[1]}
++                </h1>
++                <p className="mt-5 max-w-md text-base leading-relaxed text-paper/70">
++                  {slide.subtitle}
++                </p>
++                {slide.supportingText && (
++                  <p className="mt-3 text-sm leading-relaxed text-paper/45">{slide.supportingText}</p>
++                )}
++                <div className="mt-9 flex flex-wrap gap-4">
++                  <Link
++                    href={slide.primaryCta.href}
++                    target={slide.primaryCta.href.startsWith("http") ? "_blank" : undefined}
++                    rel={slide.primaryCta.href.startsWith("http") ? "noopener noreferrer" : undefined}
++                    className="btn-primary"
++                  >
++                    {slide.primaryCta.label}
++                  </Link>
++                  <Link
++                    href={slide.secondaryCta.href}
++                    className="border border-paper/30 px-7 py-3.5 text-sm font-medium tracking-wide text-paper transition-colors hover:border-paper hover:bg-paper hover:text-ink"
++                  >
++                    {slide.secondaryCta.label}
++                  </Link>
++                </div>
+               </div>
+-            </div>
+ 
+-            <div className="relative mx-auto aspect-square w-full max-w-md">
+-              <div className="absolute -inset-6 rounded-full bg-primary/10 blur-3xl" />
+-              <Image
+-                src={slide.image}
+-                alt={slide.alt}
+-                fill
+-                priority={i === 0}
+-                className="relative object-contain drop-shadow-[0_40px_60px_rgba(0,0,0,0.5)]"
+-              />
+-            </div>
++              <HeroVisual variant={slide.visual} />
+             </div>
+           </div>
+         ))}
+@@ -147,17 +149,18 @@ export function HeroCarousel() {
+         <ChevronRight size={20} />
+       </button>
+ 
+-      {/* Dots */}
++      {/* Progress-weighted dots — width reflects each slide's relative autoplay share */}
+       <div className="absolute bottom-6 left-1/2 flex -translate-x-1/2 gap-2">
+         {slides.map((slide, i) => (
+           <button
+             key={slide.eyebrow}
+             onClick={() => goTo(i)}
+-            aria-label={`Go to slide ${i + 1}`}
++            aria-label={`Go to ${slide.eyebrow} slide`}
+             aria-current={i === index}
+             className={cn(
+               "h-1.5 rounded-full transition-all",
+-              i === index ? "w-6 bg-primary" : "w-1.5 bg-paper/30 hover:bg-paper/50"
++              i === index ? "bg-primary" : "bg-paper/30 hover:bg-paper/50",
++              i === index ? (slide.durationMs > 6000 ? "w-10" : "w-6") : "w-1.5"
+             )}
+           />
+         ))}
+diff --git a/src/components/home/HeroVisual.tsx b/src/components/home/HeroVisual.tsx
+new file mode 100644
+index 0000000..e07e74f
+--- /dev/null
++++ b/src/components/home/HeroVisual.tsx
+@@ -0,0 +1,85 @@
++import {
++  Zap,
++  BatteryCharging,
++  Cable,
++  Volume2,
++  Headphones,
++  Wifi,
++  Flame,
++  Droplet,
++  Wind,
++  Clock,
++} from "lucide-react";
++import { cn } from "@/lib/utils";
++
++type Variant = "mobile-tech" | "vape" | "hookah";
++
++const clusters: Record<Variant, { Icon: typeof Zap; label: string }[]> = {
++  "mobile-tech": [
++    { Icon: Zap, label: "Chargers" },
++    { Icon: BatteryCharging, label: "Power banks" },
++    { Icon: Cable, label: "Cables" },
++    { Icon: Volume2, label: "Speakers" },
++    { Icon: Headphones, label: "Earbuds" },
++    { Icon: Wifi, label: "Networking" },
++  ],
++  hookah: [
++    { Icon: Flame, label: "Charcoal" },
++    { Icon: Wind, label: "Smoke" },
++    { Icon: Droplet, label: "Flavours" },
++  ],
++  vape: [],
++};
++
++// Placeholder product visuals rendered in code rather than a static image — crisper at every
++// size/DPR than the flat black-PNG-with-text-baked-in images this replaced, and honestly labels
++// itself as a placeholder rather than pretending to be finished photography.
++export function HeroVisual({ variant }: { variant: Variant }) {
++  if (variant === "vape") {
++    return (
++      <div className="relative flex aspect-square w-full max-w-md items-center justify-center">
++        <div className="absolute -inset-6 rounded-full bg-primary/5 blur-3xl" />
++        <div className="relative flex flex-col items-center gap-4 border border-paper/15 px-10 py-12 text-center">
++          <Clock size={32} className="text-primary" strokeWidth={1.5} />
++          <span className="eyebrow text-paper/50">Landing soon</span>
++          <p className="max-w-[14rem] text-sm leading-relaxed text-paper/60">
++            Production photography will go here once the range is in stock.
++          </p>
++        </div>
++      </div>
++    );
++  }
++
++  const icons = clusters[variant];
++
++  return (
++    <div className="relative mx-auto aspect-square w-full max-w-md">
++      <div className="absolute -inset-6 rounded-full bg-primary/10 blur-3xl" />
++      <div
++        className={cn(
++          "relative grid h-full w-full place-items-center gap-4",
++          icons.length > 4 ? "grid-cols-3" : "grid-cols-2"
++        )}
++      >
++        {icons.map(({ Icon, label }, i) => (
++          <div
++            key={label}
++            className={cn(
++              "flex flex-col items-center justify-center gap-2 rounded-full border border-primary/25 bg-paper/[0.03] p-6 backdrop-blur-sm transition-transform duration-500",
++              i % 2 === 0 ? "translate-y-2" : "-translate-y-2"
++            )}
++            style={{ aspectRatio: "1 / 1" }}
++          >
++            <Icon size={22} className="text-primary" strokeWidth={1.5} />
++            <span className="text-[10px] font-medium uppercase tracking-wide text-paper/50">
++              {label}
++            </span>
++          </div>
++        ))}
++      </div>
++      <span className="absolute bottom-0 right-0 text-[10px] uppercase tracking-wide text-paper/25">
++        Placeholder &middot; photography pending
++      </span>
++    </div>
++  );
++}
+diff --git a/src/components/layout/Header.tsx b/src/components/layout/Header.tsx
+index 648868d..1f35436 100644
+--- a/src/components/layout/Header.tsx
++++ b/src/components/layout/Header.tsx
+@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
+ import { createPortal } from "react-dom";
+ import Link from "next/link";
+ import Image from "next/image";
+-import { Heart, ShoppingBag, User, Menu, X, ChevronDown, Search, MessageCircle } from "lucide-react";
++import { Heart, ShoppingBag, User, Menu, X, ChevronDown, Search, MessageCircle, Bluetooth, Smartphone, Zap, Fan, Flame, Package, MonitorSmartphone, Wrench } from "lucide-react";
+ import { categories } from "@/lib/data/categories";
+ import { useCartStore } from "@/lib/store/cart";
+ import { useWishlistStore } from "@/lib/store/wishlist";
+@@ -27,6 +27,25 @@ const navLinks = [
+   { label: "Support", href: "/faq" },
+ ];
+ 
++// Sprint 2A.2: mega menu grouped into pillars for a more premium feel, but every entry maps to
++// a real, populated category — no fabricated subcategories (Networking, Smart Gadgets, Vape,
++// etc. were requested but don't exist in the catalog; see Sprint 2A.2 notes).
++const categoryIcons: Record<string, typeof Bluetooth> = {
++  "bluetooth-speakers": Bluetooth,
++  "phone-covers": Smartphone,
++  "chargers-cables": Zap,
++  fans: Fan,
++  hookah: Flame,
++  "mobile-accessories": Package,
++  "lcd-screens": MonitorSmartphone,
++  "repair-parts": Wrench,
++};
++
++const megaMenuGroups = [
++  { title: "Mobile & Tech", slugs: ["bluetooth-speakers", "phone-covers", "chargers-cables", "fans", "mobile-accessories", "lcd-screens", "repair-parts"] },
++  { title: "Hookah", slugs: ["hookah"] },
++];
++
+ export function Header() {
+   const [megaOpen, setMegaOpen] = useState(false);
+   const [mobileOpen, setMobileOpen] = useState(false);
+@@ -150,17 +169,23 @@ export function Header() {
+             Categories
+           </p>
+           <div className="flex flex-col">
+-            {categories.map((category) => (
+-              <Link
+-                key={category.id}
+-                href={`/shop?category=${category.slug}`}
+-                onClick={() => setMobileOpen(false)}
+-                className="flex min-h-12 items-center justify-between border-b border-line py-3 text-base font-medium text-ink"
+-              >
+-                <span>{category.name}</span>
+-                <span className="text-xs font-normal text-ink/45">{category.productCount}</span>
+-              </Link>
+-            ))}
++            {categories.map((category) => {
++              const Icon = categoryIcons[category.slug];
++              return (
++                <Link
++                  key={category.id}
++                  href={`/shop?category=${category.slug}`}
++                  onClick={() => setMobileOpen(false)}
++                  className="flex min-h-12 items-center justify-between border-b border-line py-3 text-base font-medium text-ink"
++                >
++                  <span className="flex items-center gap-3">
++                    {Icon && <Icon size={16} className="shrink-0 text-ink-400" strokeWidth={1.75} />}
++                    {category.name}
++                  </span>
++                  <span className="text-xs font-normal text-ink/45">{category.productCount}</span>
++                </Link>
++              );
++            })}
+           </div>
+ 
+           <p className="mb-2 mt-8 text-xs font-semibold uppercase tracking-[0.18em] text-ink/45">
+@@ -244,23 +269,44 @@ export function Header() {
+               </Link>
+               {megaOpen && (
+                 <div
+-                  className="absolute left-0 top-full w-[560px] animate-fadeUp border border-line bg-paper p-6 shadow-premium"
++                  className="absolute left-0 top-full w-[640px] animate-fadeUp border border-line bg-paper p-8 shadow-premium"
+                   onFocus={() => setMegaOpen(true)}
+                   onBlur={(e) => {
+                     if (!e.currentTarget.contains(e.relatedTarget)) setMegaOpen(false);
+                   }}
+                 >
+-                  <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+-                    {categories.map((category) => (
+-                      <Link
+-                        key={category.id}
+-                        href={`/shop?category=${category.slug}`}
+-                        className="flex items-center justify-between border-b border-line pb-3 text-sm hover:text-secondary"
+-                      >
+-                        <span>{category.name}</span>
+-                        <span className="text-xs text-ink-400">{category.productCount}</span>
+-                      </Link>
++                  <div className="grid grid-cols-3 gap-x-10">
++                    {megaMenuGroups.map((group) => (
++                      <div key={group.title} className={group.slugs.length > 1 ? "col-span-2" : "col-span-1"}>
++                        <p className="eyebrow mb-4 text-ink-400">{group.title}</p>
++                        <div className={cn("grid gap-x-6 gap-y-1", group.slugs.length > 4 ? "grid-cols-2" : "grid-cols-1")}>
++                          {group.slugs.map((slug) => {
++                            const category = categories.find((c) => c.slug === slug);
++                            if (!category) return null;
++                            const Icon = categoryIcons[slug];
++                            return (
++                              <Link
++                                key={category.id}
++                                href={`/shop?category=${category.slug}`}
++                                className="flex items-center gap-2.5 py-2 text-sm text-ink-500 hover:text-secondary"
++                              >
++                                {Icon && <Icon size={15} className="shrink-0 text-ink-400" strokeWidth={1.75} />}
++                                <span>{category.name}</span>
++                              </Link>
++                            );
++                          })}
++                        </div>
++                      </div>
+                     ))}
++                    <div className="col-span-1 flex flex-col justify-between border-l border-line pl-8">
++                      <div>
++                        <p className="eyebrow mb-3 text-ink-400">Coming Soon</p>
++                        <p className="text-sm text-ink-400">Vape range landing soon.</p>
++                      </div>
++                      <Link href="/shop" className="mt-6 text-xs font-medium text-secondary underline underline-offset-4">
++                        Shop everything &rarr;
++                      </Link>
++                    </div>
+                   </div>
+                 </div>
+               )}

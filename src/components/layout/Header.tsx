@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
-import { Heart, ShoppingBag, User, Menu, X, ChevronDown, Search, MessageCircle } from "lucide-react";
+import { Heart, ShoppingBag, User, Menu, X, ChevronDown, Search, MessageCircle, Bluetooth, Smartphone, Zap, Fan, Flame, Package, MonitorSmartphone, Wrench } from "lucide-react";
 import { categories } from "@/lib/data/categories";
 import { useCartStore } from "@/lib/store/cart";
 import { useWishlistStore } from "@/lib/store/wishlist";
@@ -25,6 +25,25 @@ const navLinks = [
   { label: "Deals", href: "/shop?filter=deals" },
   { label: "Track Order", href: "/track-order" },
   { label: "Support", href: "/faq" },
+];
+
+// Sprint 2A.2: mega menu grouped into pillars for a more premium feel, but every entry maps to
+// a real, populated category — no fabricated subcategories (Networking, Smart Gadgets, Vape,
+// etc. were requested but don't exist in the catalog; see Sprint 2A.2 notes).
+const categoryIcons: Record<string, typeof Bluetooth> = {
+  "bluetooth-speakers": Bluetooth,
+  "phone-covers": Smartphone,
+  "chargers-cables": Zap,
+  fans: Fan,
+  hookah: Flame,
+  "mobile-accessories": Package,
+  "lcd-screens": MonitorSmartphone,
+  "repair-parts": Wrench,
+};
+
+const megaMenuGroups = [
+  { title: "Mobile & Tech", slugs: ["bluetooth-speakers", "phone-covers", "chargers-cables", "fans", "mobile-accessories", "lcd-screens", "repair-parts"] },
+  { title: "Hookah", slugs: ["hookah"] },
 ];
 
 export function Header() {
@@ -150,17 +169,23 @@ export function Header() {
             Categories
           </p>
           <div className="flex flex-col">
-            {categories.map((category) => (
-              <Link
-                key={category.id}
-                href={`/shop?category=${category.slug}`}
-                onClick={() => setMobileOpen(false)}
-                className="flex min-h-12 items-center justify-between border-b border-line py-3 text-base font-medium text-ink"
-              >
-                <span>{category.name}</span>
-                <span className="text-xs font-normal text-ink/45">{category.productCount}</span>
-              </Link>
-            ))}
+            {categories.map((category) => {
+              const Icon = categoryIcons[category.slug];
+              return (
+                <Link
+                  key={category.id}
+                  href={`/shop?category=${category.slug}`}
+                  onClick={() => setMobileOpen(false)}
+                  className="flex min-h-12 items-center justify-between border-b border-line py-3 text-base font-medium text-ink"
+                >
+                  <span className="flex items-center gap-3">
+                    {Icon && <Icon size={16} className="shrink-0 text-ink-400" strokeWidth={1.75} />}
+                    {category.name}
+                  </span>
+                  <span className="text-xs font-normal text-ink/45">{category.productCount}</span>
+                </Link>
+              );
+            })}
           </div>
 
           <p className="mb-2 mt-8 text-xs font-semibold uppercase tracking-[0.18em] text-ink/45">
@@ -244,23 +269,44 @@ export function Header() {
               </Link>
               {megaOpen && (
                 <div
-                  className="absolute left-0 top-full w-[560px] animate-fadeUp border border-line bg-paper p-6 shadow-premium"
+                  className="absolute left-0 top-full w-[640px] animate-fadeUp border border-line bg-paper p-8 shadow-premium"
                   onFocus={() => setMegaOpen(true)}
                   onBlur={(e) => {
                     if (!e.currentTarget.contains(e.relatedTarget)) setMegaOpen(false);
                   }}
                 >
-                  <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                    {categories.map((category) => (
-                      <Link
-                        key={category.id}
-                        href={`/shop?category=${category.slug}`}
-                        className="flex items-center justify-between border-b border-line pb-3 text-sm hover:text-secondary"
-                      >
-                        <span>{category.name}</span>
-                        <span className="text-xs text-ink-400">{category.productCount}</span>
-                      </Link>
+                  <div className="grid grid-cols-3 gap-x-10">
+                    {megaMenuGroups.map((group) => (
+                      <div key={group.title} className={group.slugs.length > 1 ? "col-span-2" : "col-span-1"}>
+                        <p className="eyebrow mb-4 text-ink-400">{group.title}</p>
+                        <div className={cn("grid gap-x-6 gap-y-1", group.slugs.length > 4 ? "grid-cols-2" : "grid-cols-1")}>
+                          {group.slugs.map((slug) => {
+                            const category = categories.find((c) => c.slug === slug);
+                            if (!category) return null;
+                            const Icon = categoryIcons[slug];
+                            return (
+                              <Link
+                                key={category.id}
+                                href={`/shop?category=${category.slug}`}
+                                className="flex items-center gap-2.5 py-2 text-sm text-ink-500 hover:text-secondary"
+                              >
+                                {Icon && <Icon size={15} className="shrink-0 text-ink-400" strokeWidth={1.75} />}
+                                <span>{category.name}</span>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </div>
                     ))}
+                    <div className="col-span-1 flex flex-col justify-between border-l border-line pl-8">
+                      <div>
+                        <p className="eyebrow mb-3 text-ink-400">Coming Soon</p>
+                        <p className="text-sm text-ink-400">Vape range landing soon.</p>
+                      </div>
+                      <Link href="/shop" className="mt-6 text-xs font-medium text-secondary underline underline-offset-4">
+                        Shop everything &rarr;
+                      </Link>
+                    </div>
                   </div>
                 </div>
               )}
