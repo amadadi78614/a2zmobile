@@ -1,0 +1,64 @@
+diff --git a/src/components/layout/Header.tsx b/src/components/layout/Header.tsx
+index a64b56d..648868d 100644
+--- a/src/components/layout/Header.tsx
++++ b/src/components/layout/Header.tsx
+@@ -12,11 +12,19 @@ import { cn } from "@/lib/utils";
+ import { HeaderSearch } from "@/components/layout/HeaderSearch";
+ import { createClient } from "@/lib/supabase/client";
+ 
++// Canonical top-level nav, per Sprint 2A.1: Home, Shop, Brands, Deals, Track Order, Support —
++// nothing else. "Shop" gets a mega-menu (all categories, incl. Hookah) rather than being a flat
++// link; Home is rendered separately on desktop since it also doubles as the mobile drawer's
++// first quick link. No individual category (Hookah or otherwise) is hardcoded here anymore —
++// categories flow generically from src/lib/data/categories into the mega menu, mobile drawer,
++// filters, and /shop?category=... pages.
+ const navLinks = [
++  { label: "Home", href: "/" },
+   { label: "Shop", href: "/shop" },
+-  { label: "Deals", href: "/shop?filter=deals" },
+   { label: "Brands", href: "/shop" },
+-  { label: "Hookah", href: "/shop?category=hookah" },
++  { label: "Deals", href: "/shop?filter=deals" },
++  { label: "Track Order", href: "/track-order" },
++  { label: "Support", href: "/faq" },
+ ];
+ 
+ export function Header() {
+@@ -216,19 +224,24 @@ export function Header() {
+           </Link>
+ 
+           <nav className="hidden items-center gap-1 md:flex">
++            <Link href="/" className="px-4 py-2 text-sm font-medium text-ink hover:text-secondary">
++              Home
++            </Link>
++
+             <div
+               className="relative"
+               onMouseEnter={() => setMegaOpen(true)}
+               onMouseLeave={() => setMegaOpen(false)}
+             >
+-              <button
++              <Link
++                href="/shop"
+                 className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-ink hover:text-secondary"
+                 onFocus={() => setMegaOpen(true)}
+                 aria-expanded={megaOpen}
+                 aria-haspopup="true"
+               >
+-                Categories <ChevronDown size={14} />
+-              </button>
++                Shop <ChevronDown size={14} />
++              </Link>
+               {megaOpen && (
+                 <div
+                   className="absolute left-0 top-full w-[560px] animate-fadeUp border border-line bg-paper p-6 shadow-premium"
+@@ -252,7 +265,8 @@ export function Header() {
+                 </div>
+               )}
+             </div>
+-            {navLinks.map((link) => (
++
++            {navLinks.slice(2).map((link) => (
+               <Link
+                 key={link.label}
+                 href={link.href}
