@@ -1,0 +1,1169 @@
+diff --git a/src/app/shop/[pillar]/[group]/page.tsx b/src/app/shop/[pillar]/[group]/page.tsx
+new file mode 100644
+index 0000000..c42dd2c
+--- /dev/null
++++ b/src/app/shop/[pillar]/[group]/page.tsx
+@@ -0,0 +1,63 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { taxonomy, getPillar, getGroup } from "@/lib/data/taxonomy";
++import { CategoryLanding } from "@/components/shop/CategoryLanding";
++import { productsForGroup } from "@/lib/taxonomyProducts";
++
++export function generateStaticParams() {
++  return taxonomy.flatMap((pillar) => pillar.groups.map((group) => ({ pillar: pillar.slug, group: group.slug })));
++}
++
++export async function generateMetadata({
++  params,
++}: {
++  params: Promise<{ pillar: string; group: string }>;
++}): Promise<Metadata> {
++  const { pillar: pillarSlug, group: groupSlug } = await params;
++  const pillar = getPillar(pillarSlug);
++  const group = getGroup(pillarSlug, groupSlug);
++  if (!pillar || !group) return {};
++  return {
++    title: group.seoTitle,
++    description: group.seoDescription,
++    robots: pillar.isLive ? undefined : { index: false, follow: true },
++    // Single-group pillars (Vape, Hookah) render identical content at /shop/[pillar] itself —
++    // canonicalize here to avoid two indexable URLs for the same content.
++    alternates: pillar.groups.length === 1 ? { canonical: `/shop/${pillar.slug}` } : undefined,
++  };
++}
++
++export default async function GroupPage({
++  params,
++  searchParams,
++}: {
++  params: Promise<{ pillar: string; group: string }>;
++  searchParams: Promise<{ subcategory?: string }>;
++}) {
++  const { pillar: pillarSlug, group: groupSlug } = await params;
++  const { subcategory } = await searchParams;
++  const pillar = getPillar(pillarSlug);
++  const group = getGroup(pillarSlug, groupSlug);
++  if (!pillar || !group) notFound();
++
++  const activeSubcategory = subcategory;
++  const items = productsForGroup(group, activeSubcategory);
++
++  return (
++    <CategoryLanding
++      breadcrumbs={[
++        { label: "Shop", href: "/shop" },
++        { label: pillar.name, href: `/shop/${pillar.slug}` },
++        { label: group.name },
++      ]}
++      title={group.name}
++      description={group.heroDescription}
++      visualStyle={pillar.visualStyle}
++      isLive={pillar.isLive}
++      subcategories={group.subcategories}
++      activeSubcategory={activeSubcategory}
++      subcategoryBaseHref={`/shop/${pillar.slug}/${group.slug}`}
++      products={items}
++    />
++  );
++}
+diff --git a/src/app/shop/[pillar]/page.tsx b/src/app/shop/[pillar]/page.tsx
+new file mode 100644
+index 0000000..0a72864
+--- /dev/null
++++ b/src/app/shop/[pillar]/page.tsx
+@@ -0,0 +1,78 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { taxonomy, getPillar } from "@/lib/data/taxonomy";
++import { GroupCard } from "@/components/shop/GroupCard";
++import { CategoryLanding } from "@/components/shop/CategoryLanding";
++import { productsForGroup } from "@/lib/taxonomyProducts";
++import { Breadcrumbs } from "@/components/shop/Breadcrumbs";
++
++export function generateStaticParams() {
++  return taxonomy.map((p) => ({ pillar: p.slug }));
++}
++
++export async function generateMetadata({ params }: { params: Promise<{ pillar: string }> }): Promise<Metadata> {
++  const { pillar: pillarSlug } = await params;
++  const pillar = getPillar(pillarSlug);
++  if (!pillar) return {};
++  return {
++    title: pillar.seoTitle,
++    description: pillar.seoDescription,
++    robots: pillar.isLive ? undefined : { index: false, follow: true },
++  };
++}
++
++export default async function PillarPage({
++  params,
++  searchParams,
++}: {
++  params: Promise<{ pillar: string }>;
++  searchParams: Promise<{ subcategory?: string }>;
++}) {
++  const { pillar: pillarSlug } = await params;
++  const { subcategory } = await searchParams;
++  const pillar = getPillar(pillarSlug);
++  if (!pillar) notFound();
++
++  // Single-group pillars (Vape, Hookah) skip the "pick a group" step entirely — there's nothing
++  // to choose between, so go straight to the category content.
++  if (pillar.groups.length === 1) {
++    const group = pillar.groups[0];
++    const activeSubcategory = subcategory;
++    const items = productsForGroup(group, activeSubcategory);
++    return (
++      <CategoryLanding
++        breadcrumbs={[{ label: "Shop", href: "/shop" }, { label: pillar.name }]}
++        title={pillar.name}
++        description={pillar.heroDescription}
++        visualStyle={pillar.visualStyle}
++        isLive={pillar.isLive}
++        subcategories={group.subcategories}
++        activeSubcategory={activeSubcategory}
++        subcategoryBaseHref={`/shop/${pillar.slug}`}
++        products={items}
++      />
++    );
++  }
++
++  return (
++    <div>
++      <div className="border-b border-line bg-mist py-10 md:py-14">
++        <div className="container-content">
++          <Breadcrumbs items={[{ label: "Shop", href: "/shop" }, { label: pillar.name }]} />
++          <h1 className="mt-4 font-display text-3xl font-semibold sm:text-4xl">{pillar.name}</h1>
++          <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-500 sm:text-base">
++            {pillar.heroDescription}
++          </p>
++        </div>
++      </div>
++
++      <div className="container-content py-10">
++        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
++          {pillar.groups.map((group) => (
++            <GroupCard key={group.slug} pillarSlug={pillar.slug} group={group} />
++          ))}
++        </div>
++      </div>
++    </div>
++  );
++}
+diff --git a/src/app/shop/page.tsx b/src/app/shop/page.tsx
+index 07fa227..85faa02 100644
+--- a/src/app/shop/page.tsx
++++ b/src/app/shop/page.tsx
+@@ -10,6 +10,8 @@ import { MobileFilterDrawer } from "@/components/shop/MobileFilterDrawer";
+ import { SortBar } from "@/components/shop/SortBar";
+ import { PRICE_BANDS } from "@/components/shop/FilterPanel";
+ import type { AvailabilityFilter } from "@/components/shop/FilterPanel";
++import { taxonomy } from "@/lib/data/taxonomy";
++import { PillarCards } from "@/components/shop/PillarCards";
+ 
+ // Filters live in the URL (?category=&brand=&price=&availability=) rather than local-only state,
+ // so results are shareable, survive a refresh, and work with the back button — e.g.
+@@ -114,7 +116,14 @@ function ShopContent() {
+     <div className="container-content py-10 md:py-14">
+       <div className="mb-8">
+         <span className="eyebrow">Shop</span>
+-        <h1 className="mt-2 text-3xl font-semibold">All Products</h1>
++        <h1 className="mt-2 text-3xl font-semibold">Shop by Category</h1>
++      </div>
++
++      <PillarCards pillars={taxonomy} />
++
++      <div className="mb-8 mt-16 border-t border-line pt-10">
++        <span className="eyebrow">Browse Everything</span>
++        <h2 className="mt-2 text-2xl font-semibold">All Products</h2>
+       </div>
+ 
+       <div className="flex gap-10">
+diff --git a/src/components/layout/Header.tsx b/src/components/layout/Header.tsx
+index 325c63b..cae2809 100644
+--- a/src/components/layout/Header.tsx
++++ b/src/components/layout/Header.tsx
+@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
+ import { createPortal } from "react-dom";
+ import Link from "next/link";
+ import Image from "next/image";
+-import { Heart, ShoppingBag, User, Menu, X, ChevronDown, Search, MessageCircle, Bluetooth, Smartphone, Zap, Fan, Flame, Package, MonitorSmartphone, Wrench, Flag, BadgeCheck, Truck, Lock } from "lucide-react";
++import { Heart, ShoppingBag, User, Menu, X, ChevronDown, Search, MessageCircle, Flag, BadgeCheck, Truck, Lock, ChevronRight, Bluetooth, Smartphone, Zap, Fan, Flame, Package, MonitorSmartphone, Wrench } from "lucide-react";
+ import { categories } from "@/lib/data/categories";
++import { getPillar } from "@/lib/data/taxonomy";
++import { taxonomyIconMap } from "@/lib/taxonomyIcons";
+ import { useCartStore } from "@/lib/store/cart";
+ import { useWishlistStore } from "@/lib/store/wishlist";
+ import { cn } from "@/lib/utils";
+@@ -20,25 +22,10 @@ const trustBarItems: { Icon: typeof Flag; label: string; href?: string }[] = [
+   { Icon: Lock, label: "Secure Online Shopping" },
+ ];
+ 
+-// Canonical top-level nav, per Sprint 2A.1: Home, Shop, Brands, Deals, Track Order, Support —
+-// nothing else. "Shop" gets a mega-menu (all categories, incl. Hookah) rather than being a flat
+-// link; Home is rendered separately on desktop since it also doubles as the mobile drawer's
+-// first quick link. No individual category (Hookah or otherwise) is hardcoded here anymore —
+-// categories flow generically from src/lib/data/categories into the mega menu, mobile drawer,
+-// filters, and /shop?category=... pages.
+-const navLinks = [
+-  { label: "Home", href: "/" },
+-  { label: "Shop", href: "/shop" },
+-  { label: "Brands", href: "/shop" },
+-  { label: "Deals", href: "/shop?filter=deals" },
+-  { label: "Track Order", href: "/track-order" },
+-  { label: "Support", href: "/faq" },
+-];
+-
+-// Sprint 2A.2: mega menu grouped into pillars for a more premium feel, but every entry maps to
+-// a real, populated category — no fabricated subcategories (Networking, Smart Gadgets, Vape,
+-// etc. were requested but don't exist in the catalog; see Sprint 2A.2 notes).
+-const categoryIcons: Record<string, typeof Bluetooth> = {
++// Used only by the mobile drawer's existing flat category list (src/lib/data/categories.ts,
++// unrelated to the Sprint 2B taxonomy below) — kept separate from taxonomyIconMap since the two
++// use different slug spaces.
++const flatCategoryIcons: Record<string, typeof Bluetooth> = {
+   "bluetooth-speakers": Bluetooth,
+   "phone-covers": Smartphone,
+   "chargers-cables": Zap,
+@@ -49,11 +36,27 @@ const categoryIcons: Record<string, typeof Bluetooth> = {
+   "repair-parts": Wrench,
+ };
+ 
+-const megaMenuGroups = [
+-  { title: "Mobile & Tech", slugs: ["bluetooth-speakers", "phone-covers", "chargers-cables", "fans", "mobile-accessories", "lcd-screens", "repair-parts"] },
+-  { title: "Hookah", slugs: ["hookah"] },
++// Canonical top-level nav, per Sprint 2A.1: Home, Shop, Brands, Deals, Track Order, Support —
++// nothing else. "Shop" gets a mega-menu rather than being a flat link; Home is rendered
++// separately on desktop since it also doubles as the mobile drawer's first quick link.
++const navLinks = [
++  { label: "Home", href: "/" },
++  { label: "Shop", href: "/shop" },
++  { label: "Brands", href: "/shop" },
++  { label: "Deals", href: "/shop?filter=deals" },
++  { label: "Track Order", href: "/track-order" },
++  { label: "Support", href: "/faq" },
+ ];
+ 
++// Sprint 2B: mega menu rebuilt off the real pillar/group/subcategory taxonomy
++// (src/lib/data/taxonomy.ts) instead of the old flat 8-category list — Mobile & Tech is visually
++// dominant (2 columns, all 11 groups), Hookah gets a compact subcategory list, Vape is clearly
++// marked "Coming Soon" rather than presented as live. Adding a new group/subcategory later is a
++// pure data change in taxonomy.ts — nothing here needs to change.
++const mobileTechPillar = getPillar("mobile-tech")!;
++const hookahPillar = getPillar("hookah")!;
++const vapePillar = getPillar("vape")!;
++
+ export function Header() {
+   const [megaOpen, setMegaOpen] = useState(false);
+   const [mobileOpen, setMobileOpen] = useState(false);
+@@ -178,7 +181,7 @@ export function Header() {
+           </p>
+           <div className="flex flex-col">
+             {categories.map((category) => {
+-              const Icon = categoryIcons[category.slug];
++              const Icon = flatCategoryIcons[category.slug];
+               return (
+                 <Link
+                   key={category.id}
+@@ -319,43 +322,70 @@ export function Header() {
+               </Link>
+               {megaOpen && (
+                 <div
+-                  className="absolute left-0 top-full w-[640px] animate-fadeUp border border-line bg-paper p-8 shadow-premium"
++                  className="absolute left-0 top-full w-[720px] animate-fadeUp border border-line bg-paper p-8 shadow-premium"
+                   onFocus={() => setMegaOpen(true)}
+                   onBlur={(e) => {
+                     if (!e.currentTarget.contains(e.relatedTarget)) setMegaOpen(false);
+                   }}
+                 >
+                   <div className="grid grid-cols-3 gap-x-10">
+-                    {megaMenuGroups.map((group) => (
+-                      <div key={group.title} className={group.slugs.length > 1 ? "col-span-2" : "col-span-1"}>
+-                        <p className="eyebrow mb-4 text-ink-400">{group.title}</p>
+-                        <div className={cn("grid gap-x-6 gap-y-1", group.slugs.length > 4 ? "grid-cols-2" : "grid-cols-1")}>
+-                          {group.slugs.map((slug) => {
+-                            const category = categories.find((c) => c.slug === slug);
+-                            if (!category) return null;
+-                            const Icon = categoryIcons[slug];
+-                            return (
+-                              <Link
+-                                key={category.id}
+-                                href={`/shop?category=${category.slug}`}
+-                                className="flex items-center gap-2.5 py-2 text-sm text-ink-500 hover:text-secondary"
+-                              >
+-                                {Icon && <Icon size={15} className="shrink-0 text-ink-400" strokeWidth={1.75} />}
+-                                <span>{category.name}</span>
+-                              </Link>
+-                            );
+-                          })}
++                    {/* Mobile & Tech — dominant: 2 of 3 columns, all 11 groups */}
++                    <div className="col-span-2">
++                      <div className="mb-4 flex items-baseline justify-between">
++                        <p className="eyebrow text-ink-400">{mobileTechPillar.name}</p>
++                        <Link href={`/shop/${mobileTechPillar.slug}`} className="text-xs font-medium text-secondary hover:underline">
++                          Shop all &rarr;
++                        </Link>
++                      </div>
++                      <div className="grid grid-cols-2 gap-x-6 gap-y-1">
++                        {mobileTechPillar.groups.map((group) => {
++                          const Icon = taxonomyIconMap[group.icon];
++                          return (
++                            <Link
++                              key={group.slug}
++                              href={`/shop/${mobileTechPillar.slug}/${group.slug}`}
++                              className="flex items-center gap-2.5 py-2 text-sm text-ink-500 hover:text-secondary"
++                            >
++                              {Icon && <Icon size={15} className="shrink-0 text-ink-400" strokeWidth={1.75} />}
++                              <span>{group.name}</span>
++                            </Link>
++                          );
++                        })}
++                      </div>
++                    </div>
++
++                    {/* Hookah + Vape — 3rd column */}
++                    <div className="col-span-1 flex flex-col gap-8 border-l border-line pl-8">
++                      <div>
++                        <div className="mb-3 flex items-baseline justify-between">
++                          <p className="eyebrow text-ink-400">{hookahPillar.name}</p>
++                          <Link href={`/shop/${hookahPillar.slug}`} className="text-xs font-medium text-secondary hover:underline">
++                            All &rarr;
++                          </Link>
++                        </div>
++                        <div className="flex flex-col gap-1">
++                          {hookahPillar.groups[0].subcategories.slice(0, 5).map((sub) => (
++                            <Link
++                              key={sub.slug}
++                              href={`/shop/${hookahPillar.slug}?subcategory=${sub.slug}`}
++                              className="py-1 text-sm text-ink-500 hover:text-secondary"
++                            >
++                              {sub.name}
++                            </Link>
++                          ))}
+                         </div>
+                       </div>
+-                    ))}
+-                    <div className="col-span-1 flex flex-col justify-between border-l border-line pl-8">
++
+                       <div>
+-                        <p className="eyebrow mb-3 text-ink-400">Coming Soon</p>
+-                        <p className="text-sm text-ink-400">Vape range landing soon.</p>
++                        <p className="eyebrow mb-3 text-ink-400">{vapePillar.name}</p>
++                        <p className="text-sm text-ink-400">{vapePillar.tagline}.</p>
++                        <Link
++                          href={`/shop/${vapePillar.slug}`}
++                          className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-secondary hover:underline"
++                        >
++                          Get notified <ChevronRight size={12} />
++                        </Link>
+                       </div>
+-                      <Link href="/shop" className="mt-6 text-xs font-medium text-secondary underline underline-offset-4">
+-                        Shop everything &rarr;
+-                      </Link>
+                     </div>
+                   </div>
+                 </div>
+diff --git a/src/components/shop/Breadcrumbs.tsx b/src/components/shop/Breadcrumbs.tsx
+new file mode 100644
+index 0000000..ea17113
+--- /dev/null
++++ b/src/components/shop/Breadcrumbs.tsx
+@@ -0,0 +1,21 @@
++import Link from "next/link";
++import { ChevronRight } from "lucide-react";
++
++export function Breadcrumbs({ items }: { items: { label: string; href?: string }[] }) {
++  return (
++    <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-xs text-ink-400">
++      {items.map((item, i) => (
++        <span key={item.label} className="flex items-center gap-1.5">
++          {i > 0 && <ChevronRight size={12} className="shrink-0" />}
++          {item.href ? (
++            <Link href={item.href} className="hover:text-ink">
++              {item.label}
++            </Link>
++          ) : (
++            <span className="text-ink">{item.label}</span>
++          )}
++        </span>
++      ))}
++    </nav>
++  );
++}
+diff --git a/src/components/shop/CategoryLanding.tsx b/src/components/shop/CategoryLanding.tsx
+new file mode 100644
+index 0000000..c465081
+--- /dev/null
++++ b/src/components/shop/CategoryLanding.tsx
+@@ -0,0 +1,113 @@
++import Link from "next/link";
++import { MessageCircle } from "lucide-react";
++import { ProductCard } from "@/components/product/ProductCard";
++import { Breadcrumbs } from "@/components/shop/Breadcrumbs";
++import type { Product, Subcategory, TaxonomyVisualStyle } from "@/lib/types";
++import { cn } from "@/lib/utils";
++
++const heroStyles: Record<TaxonomyVisualStyle, string> = {
++  dominant: "bg-mist text-ink",
++  "dark-premium": "bg-ink text-paper",
++  "luxury-premium": "bg-ink text-paper",
++};
++
++export function CategoryLanding({
++  breadcrumbs,
++  title,
++  description,
++  visualStyle,
++  isLive,
++  subcategories,
++  activeSubcategory,
++  subcategoryBaseHref,
++  products,
++}: {
++  breadcrumbs: { label: string; href?: string }[];
++  title: string;
++  description: string;
++  visualStyle: TaxonomyVisualStyle;
++  isLive: boolean;
++  subcategories: Subcategory[];
++  activeSubcategory?: string;
++  subcategoryBaseHref: string;
++  products: Product[];
++}) {
++  return (
++    <div>
++      <div className={cn("border-b border-line py-10 md:py-14", heroStyles[visualStyle])}>
++        <div className="container-content">
++          <Breadcrumbs items={breadcrumbs} />
++          <h1 className="mt-4 font-display text-3xl font-semibold sm:text-4xl">{title}</h1>
++          <p
++            className={cn(
++              "mt-3 max-w-xl text-sm leading-relaxed sm:text-base",
++              visualStyle === "dominant" ? "text-ink-500" : "text-paper/70"
++            )}
++          >
++            {description}
++          </p>
++          {!isLive && (
++            <a
++              href="https://wa.me/27000000000?text=Hi%20A2Z%2C%20please%20let%20me%20know%20when%20this%20range%20launches."
++              target="_blank"
++              rel="noopener noreferrer"
++              className="mt-6 inline-flex items-center gap-2 bg-primary px-6 py-3 text-sm font-medium text-ink transition-colors hover:bg-paper"
++            >
++              <MessageCircle size={16} />
++              Get notified on WhatsApp
++            </a>
++          )}
++        </div>
++      </div>
++
++      <div className="container-content py-10">
++        {subcategories.length > 0 && (
++          <div className="mb-8 flex flex-wrap gap-2">
++            <Link
++              href={subcategoryBaseHref}
++              className={cn(
++                "border px-4 py-2 text-xs font-medium uppercase tracking-wide transition-colors",
++                !activeSubcategory ? "border-ink bg-ink text-paper" : "border-line text-ink-500 hover:border-ink"
++              )}
++            >
++              All
++            </Link>
++            {subcategories.map((sub) => (
++              <Link
++                key={sub.slug}
++                href={`${subcategoryBaseHref}?subcategory=${sub.slug}`}
++                className={cn(
++                  "border px-4 py-2 text-xs font-medium uppercase tracking-wide transition-colors",
++                  activeSubcategory === sub.slug ? "border-ink bg-ink text-paper" : "border-line text-ink-500 hover:border-ink"
++                )}
++              >
++                {sub.name}
++              </Link>
++            ))}
++          </div>
++        )}
++
++        {products.length > 0 ? (
++          <div className="grid grid-cols-2 gap-x-5 gap-y-10 sm:grid-cols-3 xl:grid-cols-4">
++            {products.map((p) => (
++              <ProductCard key={p.id} product={p} />
++            ))}
++          </div>
++        ) : isLive ? (
++          <div className="py-16 text-center">
++            <p className="text-sm text-ink-400">No products in this range yet — check back soon.</p>
++            <Link href="/shop" className="mt-4 inline-block text-sm font-medium text-ink underline underline-offset-4">
++              Browse everything we stock
++            </Link>
++          </div>
++        ) : (
++          <div className="py-16 text-center">
++            <p className="text-sm text-ink-400">
++              This range hasn&apos;t launched yet — WhatsApp us above to be the first to know.
++            </p>
++          </div>
++        )}
++      </div>
++    </div>
++  );
++}
+diff --git a/src/components/shop/GroupCard.tsx b/src/components/shop/GroupCard.tsx
+new file mode 100644
+index 0000000..93b97e5
+--- /dev/null
++++ b/src/components/shop/GroupCard.tsx
+@@ -0,0 +1,23 @@
++import Link from "next/link";
++import type { CategoryGroup } from "@/lib/types";
++import { taxonomyIconMap } from "@/lib/taxonomyIcons";
++
++export function GroupCard({ pillarSlug, group }: { pillarSlug: string; group: CategoryGroup }) {
++  const Icon = taxonomyIconMap[group.icon];
++  return (
++    <Link
++      href={`/shop/${pillarSlug}/${group.slug}`}
++      className="group flex flex-col gap-3 border border-line p-6 transition-colors hover:border-ink"
++    >
++      {Icon && <Icon size={22} className="text-secondary" strokeWidth={1.75} />}
++      <h3 className="text-sm font-semibold text-ink">{group.name}</h3>
++      <p className="text-xs leading-relaxed text-ink-400">
++        {group.subcategories
++          .slice(0, 3)
++          .map((s) => s.name)
++          .join(" · ")}
++        {group.subcategories.length > 3 ? " · …" : ""}
++      </p>
++    </Link>
++  );
++}
+diff --git a/src/components/shop/PillarCards.tsx b/src/components/shop/PillarCards.tsx
+new file mode 100644
+index 0000000..bfe58e8
+--- /dev/null
++++ b/src/components/shop/PillarCards.tsx
+@@ -0,0 +1,55 @@
++import Link from "next/link";
++import type { Pillar } from "@/lib/types";
++import { cn } from "@/lib/utils";
++
++const cardStyles: Record<Pillar["visualStyle"], string> = {
++  dominant: "bg-mist text-ink",
++  "dark-premium": "bg-ink text-paper",
++  "luxury-premium": "bg-ink text-paper",
++};
++
++export function PillarCards({ pillars }: { pillars: Pillar[] }) {
++  const mobileTech = pillars.find((p) => p.slug === "mobile-tech");
++  const others = pillars.filter((p) => p.slug !== "mobile-tech");
++
++  return (
++    <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:grid-rows-2">
++      {mobileTech && (
++        <Link
++          href={`/shop/${mobileTech.slug}`}
++          className={cn(
++            "group flex min-h-[260px] flex-col justify-end p-8 transition-opacity hover:opacity-95 md:col-span-2 md:row-span-2 md:min-h-[420px] md:p-12",
++            cardStyles[mobileTech.visualStyle]
++          )}
++        >
++          <span className="eyebrow text-secondary">{mobileTech.tagline}</span>
++          <h2 className="mt-2 font-display text-3xl font-semibold sm:text-4xl">{mobileTech.name}</h2>
++          <p className="mt-3 max-w-md text-sm leading-relaxed text-ink-500">{mobileTech.heroDescription}</p>
++          <span className="mt-6 inline-flex w-fit items-center gap-1.5 text-sm font-medium text-ink underline underline-offset-4">
++            Shop Mobile &amp; Tech &rarr;
++          </span>
++        </Link>
++      )}
++
++      {others.map((pillar) => (
++        <Link
++          key={pillar.slug}
++          href={`/shop/${pillar.slug}`}
++          className={cn(
++            "group flex min-h-[200px] flex-col justify-end p-6 transition-opacity hover:opacity-90 md:min-h-0",
++            cardStyles[pillar.visualStyle]
++          )}
++        >
++          <span className="eyebrow text-primary">{pillar.tagline}</span>
++          <h2 className="mt-2 font-display text-xl font-semibold sm:text-2xl">{pillar.name}</h2>
++          <p className="mt-2 max-w-xs text-xs leading-relaxed text-paper/60 sm:text-sm">
++            {pillar.heroDescription}
++          </p>
++          <span className="mt-4 inline-flex w-fit items-center gap-1.5 text-xs font-medium text-primary underline underline-offset-4">
++            {pillar.isLive ? `Shop ${pillar.name}` : "Learn more"} &rarr;
++          </span>
++        </Link>
++      ))}
++    </div>
++  );
++}
+diff --git a/src/lib/data/products.ts b/src/lib/data/products.ts
+index cab7acb..0a29049 100644
+--- a/src/lib/data/products.ts
++++ b/src/lib/data/products.ts
+@@ -10,6 +10,7 @@ export const products: Product[] = [
+     price: 1899,
+     images: ["/images/products/jbl-flip6-1.jpg", "/images/products/jbl-flip6-2.jpg"],
+     sku: "A2Z-JBL-FLIP6",
++    subcategorySlugs: ["bluetooth-speakers"],
+     barcode: "6009876543210",
+     stock: 32,
+     rating: 4.5,
+@@ -38,6 +39,7 @@ export const products: Product[] = [
+     compareAtPrice: 799,
+     images: ["/images/products/jbl-go3-1.jpg"],
+     sku: "A2Z-JBL-GO3",
++    subcategorySlugs: ["bluetooth-speakers"],
+     stock: 41,
+     rating: 4.3,
+     reviewCount: 154,
+@@ -62,6 +64,7 @@ export const products: Product[] = [
+     price: 2299,
+     images: ["/images/products/anker737-1.jpg"],
+     sku: "A2Z-ANK-737",
++    subcategorySlugs: ["power-banks"],
+     stock: 21,
+     rating: 4.7,
+     reviewCount: 67,
+@@ -84,6 +87,7 @@ export const products: Product[] = [
+     price: 549,
+     images: ["/images/products/baseus-gan-1.jpg"],
+     sku: "A2Z-BSE-GAN65",
++    subcategorySlugs: ["gan-chargers", "fast-chargers", "wall-chargers"],
+     barcode: "6009876543211",
+     stock: 58,
+     rating: 4.6,
+@@ -111,6 +115,7 @@ export const products: Product[] = [
+     price: 179,
+     images: ["/images/products/hoco-cable-1.jpg"],
+     sku: "A2Z-HOC-CBL1M",
++    subcategorySlugs: ["lightning-cables"],
+     stock: 140,
+     rating: 4.2,
+     reviewCount: 211,
+@@ -134,6 +139,7 @@ export const products: Product[] = [
+     compareAtPrice: 1099,
+     images: ["/images/products/romoss-sense6-1.jpg"],
+     sku: "A2Z-RMS-SNS6",
++    subcategorySlugs: ["power-banks"],
+     stock: 37,
+     rating: 4.1,
+     reviewCount: 76,
+@@ -156,6 +162,7 @@ export const products: Product[] = [
+     price: 249,
+     images: ["/images/products/case-silicone-1.jpg"],
+     sku: "A2Z-HOC-SIL15",
++    subcategorySlugs: ["phone-cases"],
+     stock: 84,
+     rating: 4.4,
+     reviewCount: 133,
+@@ -180,6 +187,7 @@ export const products: Product[] = [
+     price: 329,
+     images: ["/images/products/case-rugged-1.jpg"],
+     sku: "A2Z-HOC-RGD24",
++    subcategorySlugs: ["rugged-cases", "phone-cases"],
+     stock: 46,
+     rating: 4.5,
+     reviewCount: 58,
+@@ -205,6 +213,7 @@ export const products: Product[] = [
+     price: 129,
+     images: ["/images/products/screen-protector-1.jpg"],
+     sku: "A2Z-HOC-TGP2",
++    subcategorySlugs: ["screen-protectors"],
+     stock: 210,
+     rating: 4.3,
+     reviewCount: 187,
+@@ -227,6 +236,7 @@ export const products: Product[] = [
+     compareAtPrice: 999,
+     images: ["/images/products/oraimo-earbuds-1.jpg"],
+     sku: "A2Z-ORM-FP4",
++    subcategorySlugs: ["bluetooth-earbuds"],
+     stock: 63,
+     rating: 4.4,
+     reviewCount: 142,
+@@ -250,6 +260,7 @@ export const products: Product[] = [
+     price: 199,
+     images: ["/images/products/mini-fan-1.jpg"],
+     sku: "A2Z-HOC-MFAN",
++    subcategorySlugs: ["mini-fans"],
+     stock: 98,
+     rating: 4.1,
+     reviewCount: 96,
+@@ -295,6 +306,7 @@ export const products: Product[] = [
+     price: 1499,
+     images: ["/images/products/hookah-set-1.jpg"],
+     sku: "A2Z-GEN-HK2H",
++    subcategorySlugs: ["hookahs"],
+     stock: 18,
+     rating: 4.6,
+     reviewCount: 54,
+@@ -318,6 +330,7 @@ export const products: Product[] = [
+     price: 179,
+     images: ["/images/products/charcoal-1.jpg"],
+     sku: "A2Z-GEN-CH1KG",
++    subcategorySlugs: ["charcoal"],
+     stock: 120,
+     rating: 4.5,
+     reviewCount: 71,
+@@ -339,6 +352,7 @@ export const products: Product[] = [
+     price: 249,
+     images: ["/images/products/hookah-hose-1.jpg"],
+     sku: "A2Z-GEN-HOSE1",
++    subcategorySlugs: ["hoses"],
+     stock: 65,
+     rating: 4.3,
+     reviewCount: 38,
+@@ -361,6 +375,7 @@ export const products: Product[] = [
+     price: 1299,
+     images: ["/images/products/lcd-iphone13-1.jpg"],
+     sku: "A2Z-LCD-IP13",
++    subcategorySlugs: ["screen-replacements"],
+     stock: 22,
+     rating: 4.4,
+     reviewCount: 39,
+@@ -384,6 +399,7 @@ export const products: Product[] = [
+     price: 899,
+     images: ["/images/products/lcd-samsung-a-1.jpg"],
+     sku: "A2Z-LCD-GALA",
++    subcategorySlugs: ["screen-replacements"],
+     stock: 30,
+     rating: 4.2,
+     reviewCount: 27,
+@@ -406,6 +422,7 @@ export const products: Product[] = [
+     price: 349,
+     images: ["/images/products/repair-toolkit-1.jpg"],
+     sku: "A2Z-TK-24PC",
++    subcategorySlugs: ["repair-tools"],
+     stock: 54,
+     rating: 4.6,
+     reviewCount: 88,
+@@ -428,6 +445,7 @@ export const products: Product[] = [
+     price: 549,
+     images: ["/images/products/battery-iphone12-1.jpg"],
+     sku: "A2Z-BAT-IP1213",
++    subcategorySlugs: ["replacement-batteries"],
+     stock: 40,
+     rating: 4.3,
+     reviewCount: 52,
+@@ -450,6 +468,7 @@ export const products: Product[] = [
+     price: 89,
+     images: ["/images/products/adhesive-strips-1.jpg"],
+     sku: "A2Z-ADH-UNIV",
++    subcategorySlugs: ["adhesives-parts"],
+     stock: 200,
+     rating: 4.1,
+     reviewCount: 34,
+@@ -470,6 +489,7 @@ export const products: Product[] = [
+     price: 249,
+     images: ["/images/products/case-silicone-1.jpg"],
+     sku: "A2Z-HOC-SIL22",
++    subcategorySlugs: ["phone-cases"],
+     barcode: "6009876543212",
+     stock: 52,
+     rating: 4.3,
+@@ -494,6 +514,7 @@ export const products: Product[] = [
+     price: 189,
+     images: ["/images/products/hoco-cable-1.jpg"],
+     sku: "A2Z-HOC-CCC1M",
++    subcategorySlugs: ["usb-c-cables"],
+     barcode: "6009876543213",
+     stock: 96,
+     rating: 4.3,
+diff --git a/src/lib/data/taxonomy.ts b/src/lib/data/taxonomy.ts
+new file mode 100644
+index 0000000..2d39511
+--- /dev/null
++++ b/src/lib/data/taxonomy.ts
+@@ -0,0 +1,269 @@
++import { Pillar } from "@/lib/types";
++
++// Real, written hero/description/SEO copy for every pillar and group (14 pages total: 3 pillars
++// + 11 groups under Mobile & Tech). Subcategory-level pages are NOT built as separate indexed
++// routes — see src/app/shop/[pillar]/[group]/page.tsx for why (thin/duplicate-content risk
++// across ~70 near-identical leaf pages). Subcategories instead render as in-page filter chips
++// on their group's page, which is real and functional without hurting SEO.
++
++export const taxonomy: Pillar[] = [
++  {
++    slug: "mobile-tech",
++    name: "Mobile & Tech",
++    tagline: "The core of what we sell",
++    heroDescription:
++      "Chargers, cables, power banks, audio, protection, and everything else that keeps your devices running — the largest and longest-running part of A2Z.",
++    seoTitle: "Mobile & Tech Accessories | A2Z Mobile & Computer Services",
++    seoDescription:
++      "Shop chargers, cables, power banks, Bluetooth audio, phone protection, computer accessories, and more — genuine stock, Mbombela-based, nationwide delivery.",
++    visualStyle: "dominant",
++    isLive: true,
++    groups: [
++      {
++        slug: "charging",
++        name: "Charging",
++        icon: "Zap",
++        heroDescription: "Wall chargers, fast chargers, and everything that puts power back in your devices.",
++        seoTitle: "Chargers — Wall, Fast, GaN & Wireless | A2Z",
++        seoDescription: "Wall chargers, fast chargers, GaN chargers, wireless chargers, car chargers and multi-port chargers from trusted brands.",
++        subcategories: [
++          { slug: "wall-chargers", name: "Wall Chargers" },
++          { slug: "fast-chargers", name: "Fast Chargers" },
++          { slug: "gan-chargers", name: "GaN Chargers" },
++          { slug: "wireless-chargers", name: "Wireless Chargers" },
++          { slug: "car-chargers", name: "Car Chargers" },
++          { slug: "multi-port-chargers", name: "Multi-Port Chargers" },
++        ],
++      },
++      {
++        slug: "charging-cables",
++        name: "Charging Cables",
++        icon: "Cable",
++        heroDescription: "USB-C, Lightning, and every other cable your devices actually need.",
++        seoTitle: "Charging Cables — USB-C, Lightning & More | A2Z",
++        seoDescription: "USB-C cables, Lightning cables, Micro USB, USB-A, HDMI and DisplayPort cables — durable, braided, fast-charge rated.",
++        subcategories: [
++          { slug: "usb-c-cables", name: "USB-C Cables" },
++          { slug: "lightning-cables", name: "Lightning Cables" },
++          { slug: "micro-usb-cables", name: "Micro USB" },
++          { slug: "usb-a-cables", name: "USB-A" },
++          { slug: "hdmi-cables", name: "HDMI" },
++          { slug: "displayport-cables", name: "DisplayPort" },
++        ],
++      },
++      {
++        slug: "power",
++        name: "Power",
++        icon: "BatteryCharging",
++        heroDescription: "Power banks for every use case — everyday carry, laptops, and load-shedding backup.",
++        seoTitle: "Power Banks & Portable Power | A2Z",
++        seoDescription: "Power banks, MagSafe power banks, laptop power banks and emergency power solutions, in stock in Mbombela.",
++        subcategories: [
++          { slug: "power-banks", name: "Power Banks" },
++          { slug: "magsafe-power-banks", name: "MagSafe Power Banks" },
++          { slug: "laptop-power-banks", name: "Laptop Power Banks" },
++          { slug: "emergency-power", name: "Emergency Power" },
++        ],
++      },
++      {
++        slug: "audio",
++        name: "Audio",
++        icon: "Volume2",
++        heroDescription: "Earbuds, headphones, and speakers — genuine stock from JBL, Oraimo, and more.",
++        seoTitle: "Bluetooth Speakers, Earbuds & Headphones | A2Z",
++        seoDescription: "Bluetooth earbuds, headphones, Bluetooth speakers, neckbands and AUX accessories from trusted audio brands.",
++        subcategories: [
++          { slug: "bluetooth-earbuds", name: "Bluetooth Earbuds" },
++          { slug: "headphones", name: "Headphones" },
++          { slug: "bluetooth-speakers", name: "Bluetooth Speakers" },
++          { slug: "neckbands", name: "Neckbands" },
++          { slug: "aux-accessories", name: "AUX Accessories" },
++        ],
++      },
++      {
++        slug: "phone-protection",
++        name: "Phone Protection",
++        icon: "ShieldCheck",
++        heroDescription: "Cases and screen protection built for everyday drops, scratches, and daily wear.",
++        seoTitle: "Phone Cases & Screen Protectors | A2Z",
++        seoDescription: "Phone cases, MagSafe cases, rugged cases, clear cases, screen protectors and camera lens protectors.",
++        subcategories: [
++          { slug: "phone-cases", name: "Phone Cases" },
++          { slug: "magsafe-cases", name: "MagSafe Cases" },
++          { slug: "rugged-cases", name: "Rugged Cases" },
++          { slug: "clear-cases", name: "Clear Cases" },
++          { slug: "premium-cases", name: "Premium Cases" },
++          { slug: "screen-protectors", name: "Screen Protectors" },
++          { slug: "camera-lens-protectors", name: "Camera Lens Protectors" },
++        ],
++      },
++      {
++        slug: "car-accessories",
++        name: "Car Accessories",
++        icon: "Car",
++        heroDescription: "Mounts, chargers, and hands-free essentials for the road.",
++        seoTitle: "Car Phone Mounts & Accessories | A2Z",
++        seoDescription: "Phone mounts, car chargers, Bluetooth FM transmitters and magnetic mounts for every car.",
++        subcategories: [
++          { slug: "phone-mounts", name: "Phone Mounts" },
++          { slug: "car-chargers-group", name: "Car Chargers" },
++          { slug: "bluetooth-fm-transmitters", name: "Bluetooth FM Transmitters" },
++          { slug: "magnetic-mounts", name: "Magnetic Mounts" },
++        ],
++      },
++      {
++        slug: "computer-accessories",
++        name: "Computer Accessories",
++        icon: "Laptop",
++        heroDescription: "Everything for the desk — mice, keyboards, hubs, and laptop stands.",
++        seoTitle: "Computer & Laptop Accessories | A2Z",
++        seoDescription: "Wireless mice, keyboards, USB hubs, docking stations, laptop stands, webcam accessories and cooling pads.",
++        subcategories: [
++          { slug: "wireless-mouse", name: "Wireless Mouse" },
++          { slug: "keyboards", name: "Keyboards" },
++          { slug: "usb-hubs", name: "USB Hubs" },
++          { slug: "docking-stations", name: "Docking Stations" },
++          { slug: "laptop-stands", name: "Laptop Stands" },
++          { slug: "webcam-accessories", name: "Webcam Accessories" },
++          { slug: "cooling-pads", name: "Cooling Pads" },
++        ],
++      },
++      {
++        slug: "networking",
++        name: "Networking",
++        icon: "Wifi",
++        heroDescription: "Routers, mesh Wi-Fi, and everything for a faster, more reliable connection.",
++        seoTitle: "Routers, Mesh WiFi & Networking | A2Z",
++        seoDescription: "Routers, mesh WiFi systems, WiFi extenders, switches, network cables and USB network adapters.",
++        subcategories: [
++          { slug: "routers", name: "Routers" },
++          { slug: "mesh-wifi", name: "Mesh WiFi" },
++          { slug: "wifi-extenders", name: "WiFi Extenders" },
++          { slug: "switches", name: "Switches" },
++          { slug: "network-cables", name: "Network Cables" },
++          { slug: "usb-network-adapters", name: "USB Network Adapters" },
++        ],
++      },
++      {
++        slug: "storage",
++        name: "Storage",
++        icon: "HardDrive",
++        heroDescription: "Flash drives, memory cards, and external storage for photos, files, and backups.",
++        seoTitle: "Flash Drives, Memory Cards & Storage | A2Z",
++        seoDescription: "Flash drives, memory cards, card readers and external storage drives.",
++        subcategories: [
++          { slug: "flash-drives", name: "Flash Drives" },
++          { slug: "memory-cards", name: "Memory Cards" },
++          { slug: "card-readers", name: "Card Readers" },
++          { slug: "external-storage", name: "External Storage" },
++        ],
++      },
++      {
++        slug: "smart-gadgets",
++        name: "Smart Gadgets",
++        icon: "Sparkles",
++        heroDescription: "Smart watches, ring lights, tripods, and the everyday gadgets that make life easier.",
++        seoTitle: "Smart Watches, Ring Lights & Gadgets | A2Z",
++        seoDescription: "Smart watches, selfie sticks, tripods, ring lights, LED lights, mini fans and emergency bulbs.",
++        subcategories: [
++          { slug: "smart-watches", name: "Smart Watches" },
++          { slug: "selfie-sticks", name: "Selfie Sticks" },
++          { slug: "tripods", name: "Tripods" },
++          { slug: "ring-lights", name: "Ring Lights" },
++          { slug: "led-lights", name: "LED Lights" },
++          { slug: "mini-fans", name: "Mini Fans" },
++          { slug: "emergency-bulbs", name: "Emergency Bulbs" },
++        ],
++      },
++      {
++        // Not in the brief's list — added so the two existing, real, currently-linked categories
++        // (lcd-screens, repair-parts) stay reachable under the new taxonomy instead of becoming
++        // orphaned. See Sprint 2B commit notes.
++        slug: "repairs-screens",
++        name: "Repairs & Screens",
++        icon: "Wrench",
++        heroDescription: "Screen replacements, batteries, and the tools and parts for doing repairs right.",
++        seoTitle: "Phone Screen Replacements & Repair Parts | A2Z",
++        seoDescription: "OEM-quality screen replacements, batteries, repair tool kits and adhesives — genuine parts for technicians and DIY repairs.",
++        subcategories: [
++          { slug: "screen-replacements", name: "Screen Replacements" },
++          { slug: "replacement-batteries", name: "Batteries" },
++          { slug: "repair-tools", name: "Repair Tools" },
++          { slug: "adhesives-parts", name: "Adhesives & Parts" },
++        ],
++      },
++    ],
++  },
++  {
++    slug: "vape",
++    name: "Vape",
++    tagline: "Landing soon",
++    heroDescription:
++      "Disposable vapes, pod systems, vape kits and accessories from trusted brands — coming soon to A2Z.",
++    seoTitle: "Vape — Coming Soon | A2Z Mobile & Computer Services",
++    seoDescription: "A2Z's vape range is landing soon. Get notified on WhatsApp the moment it's in stock.",
++    visualStyle: "dark-premium",
++    isLive: false,
++    groups: [
++      {
++        slug: "vape-essentials",
++        name: "Vape Essentials",
++        icon: "Wind",
++        heroDescription: "The full range, landing soon: disposables, pods, kits, e-liquids, and accessories.",
++        seoTitle: "Vape Range — Coming Soon | A2Z",
++        seoDescription: "Disposable vapes, pod systems, vape kits, replacement pods and coils, e-liquids, batteries, chargers and accessories — landing soon.",
++        subcategories: [
++          { slug: "disposable-vapes", name: "Disposable Vapes" },
++          { slug: "pod-systems", name: "Pod Systems" },
++          { slug: "vape-kits", name: "Vape Kits" },
++          { slug: "replacement-pods", name: "Replacement Pods" },
++          { slug: "replacement-coils", name: "Replacement Coils" },
++          { slug: "e-liquids", name: "E-Liquids" },
++          { slug: "vape-batteries", name: "Batteries" },
++          { slug: "vape-chargers", name: "Chargers" },
++          { slug: "vape-accessories", name: "Accessories" },
++        ],
++      },
++    ],
++  },
++  {
++    slug: "hookah",
++    name: "Hookah",
++    tagline: "The ultimate hookah experience",
++    heroDescription: "Premium hookahs, flavours, charcoal and accessories — everything for the perfect session.",
++    seoTitle: "Hookah — Hookahs, Charcoal & Accessories | A2Z",
++    seoDescription: "Shop hookahs, bowls, charcoal, flavours, hoses, mouthpieces, cleaning kits and accessories in Mbombela.",
++    visualStyle: "luxury-premium",
++    isLive: true,
++    groups: [
++      {
++        slug: "hookah-essentials",
++        name: "Hookah Essentials",
++        icon: "Flame",
++        heroDescription: "Everything you need for the perfect session, from the base to the last coal.",
++        seoTitle: "Hookahs, Bowls, Charcoal & Hoses | A2Z",
++        seoDescription: "Hookahs, bowls, charcoal, flavours, hoses, mouthpieces, cleaning kits, tongs and accessories.",
++        subcategories: [
++          { slug: "hookahs", name: "Hookahs" },
++          { slug: "bowls", name: "Bowls" },
++          { slug: "charcoal", name: "Charcoal" },
++          { slug: "flavours", name: "Flavours" },
++          { slug: "hoses", name: "Hoses" },
++          { slug: "mouthpieces", name: "Mouthpieces" },
++          { slug: "cleaning-kits", name: "Cleaning Kits" },
++          { slug: "tongs", name: "Tongs" },
++          { slug: "hookah-accessories", name: "Accessories" },
++        ],
++      },
++    ],
++  },
++];
++
++export function getPillar(slug: string) {
++  return taxonomy.find((p) => p.slug === slug);
++}
++
++export function getGroup(pillarSlug: string, groupSlug: string) {
++  const pillar = getPillar(pillarSlug);
++  return pillar?.groups.find((g) => g.slug === groupSlug);
++}
+diff --git a/src/lib/taxonomyIcons.ts b/src/lib/taxonomyIcons.ts
+new file mode 100644
+index 0000000..203fa25
+--- /dev/null
++++ b/src/lib/taxonomyIcons.ts
+@@ -0,0 +1,32 @@
++import {
++  Zap,
++  Cable,
++  BatteryCharging,
++  Volume2,
++  ShieldCheck,
++  Car,
++  Laptop,
++  Wifi,
++  HardDrive,
++  Sparkles,
++  Wrench,
++  Wind,
++  Flame,
++  type LucideIcon,
++} from "lucide-react";
++
++export const taxonomyIconMap: Record<string, LucideIcon> = {
++  Zap,
++  Cable,
++  BatteryCharging,
++  Volume2,
++  ShieldCheck,
++  Car,
++  Laptop,
++  Wifi,
++  HardDrive,
++  Sparkles,
++  Wrench,
++  Wind,
++  Flame,
++};
+diff --git a/src/lib/taxonomyProducts.ts b/src/lib/taxonomyProducts.ts
+new file mode 100644
+index 0000000..4ec29f4
+--- /dev/null
++++ b/src/lib/taxonomyProducts.ts
+@@ -0,0 +1,11 @@
++import { products } from "@/lib/data/products";
++import type { CategoryGroup } from "@/lib/types";
++
++export function productsForGroup(group: CategoryGroup, subcategorySlug?: string) {
++  const validSlugs = new Set(group.subcategories.map((s) => s.slug));
++  return products.filter((p) => {
++    if (!p.subcategorySlugs?.length) return false;
++    if (subcategorySlug) return p.subcategorySlugs.includes(subcategorySlug);
++    return p.subcategorySlugs.some((s) => validSlugs.has(s));
++  });
++}
+diff --git a/src/lib/types.ts b/src/lib/types.ts
+index 37e8028..6697569 100644
+--- a/src/lib/types.ts
++++ b/src/lib/types.ts
+@@ -6,6 +6,46 @@ export type Category = {
+   productCount: number;
+ };
+ 
++// ---------- Sprint 2B: pillar/group/subcategory taxonomy ----------
++// An additive presentation/navigation layer on top of the existing flat Category system above.
++// `categorySlug` on Product remains the single source of truth for the original 8 categories and
++// every existing /shop?category=... link, filter, and mega-menu entry — nothing here replaces it.
++// This layer exists so the mega menu, /shop pillar cards, and /shop/[pillar]/[group] landing
++// pages can be driven entirely off data (per the brief's own "future categories should require
++// minimal code changes" requirement) instead of hardcoded JSX.
++
++export type TaxonomyVisualStyle = "dominant" | "dark-premium" | "luxury-premium";
++
++export type Subcategory = {
++  slug: string;
++  name: string;
++};
++
++export type CategoryGroup = {
++  slug: string;
++  name: string;
++  /** lucide-react icon name, resolved by the consuming component's own icon map */
++  icon: string;
++  subcategories: Subcategory[];
++  heroDescription: string;
++  seoTitle: string;
++  seoDescription: string;
++};
++
++export type Pillar = {
++  slug: "mobile-tech" | "vape" | "hookah";
++  name: string;
++  tagline: string;
++  heroDescription: string;
++  seoTitle: string;
++  seoDescription: string;
++  visualStyle: TaxonomyVisualStyle;
++  /** Whether this pillar has any real, orderable inventory yet. Drives empty-state and
++   * noindex behaviour honestly rather than pretending a pillar is live before it is. */
++  isLive: boolean;
++  groups: CategoryGroup[];
++};
++
+ export type Brand = {
+   id: string;
+   slug: string;
+@@ -39,6 +79,13 @@ export type Product = {
+   compatibleDevices?: string[];
+   tags?: string[];
+   searchKeywords?: string[];
++  /** Sprint 2B: slugs into the new pillar/group/subcategory taxonomy (src/lib/data/taxonomy.ts).
++   * A product can honestly belong to more than one subcategory (e.g. a GaN wall charger is both
++   * a "Wall Charger" and a "Fast Charger"), hence a list rather than a single slug. Only
++   * populated where a real, defensible match exists — most products currently have none, and
++   * that's fine; they still show at their existing categorySlug level. Purely additive: does not
++   * replace or interact with categorySlug, which remains the source of truth it always was. */
++  subcategorySlugs?: string[];
+ };
+ 
+ export type CartLine = {
