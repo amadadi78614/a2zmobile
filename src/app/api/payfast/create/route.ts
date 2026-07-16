@@ -1,30 +1,9 @@
-import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { createPayFastSignature } from "@/lib/payfast/signature";
 
 const requestSchema = z.object({ orderId: z.string().uuid() });
-
-function payFastEncode(value: string) {
-  return encodeURIComponent(value.trim())
-    .replace(/%20/g, "+")
-    .replace(/[!'()*]/g, (character) =>
-      `%${character.charCodeAt(0).toString(16).toUpperCase()}`
-    );
-}
-
-function createSignature(fields: Record<string, string>, passphrase?: string) {
-  const parameterString = Object.entries(fields)
-    .filter(([, value]) => value !== "")
-    .map(([key, value]) => `${key}=${payFastEncode(value)}`)
-    .join("&");
-
-  const signedString = passphrase
-    ? `${parameterString}&passphrase=${payFastEncode(passphrase)}`
-    : parameterString;
-
-  return crypto.createHash("md5").update(signedString).digest("hex");
-}
 
 export async function POST(request: Request) {
   try {
@@ -81,7 +60,7 @@ export async function POST(request: Request) {
       custom_str1: order.id,
     };
 
-    fields.signature = createSignature(fields, passphrase);
+    fields.signature = createPayFastSignature(Object.entries(fields), passphrase);
 
     return NextResponse.json({
       action: sandbox

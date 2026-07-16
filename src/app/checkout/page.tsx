@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Building2, CheckCircle2, CreditCard, Store, Truck } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Building2, CheckCircle2, CreditCard, Store, Truck, AlertCircle } from "lucide-react";
 import { useCartStore } from "@/lib/store/cart";
 import { products } from "@/lib/data/products";
 import { createClient } from "@/lib/supabase/client";
@@ -32,8 +32,15 @@ const steps: { key: Step; label: string }[] = [
 
 const collectionStore = "A2Z Mobile – Store Collection";
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // PayFast's cancel_url lands here with ?payment=cancelled. This is purely informational — it
+  // does not write anything to the order. Stock was reserved at order-creation time and is only
+  // ever released or finalised by verified server-side logic (the PayFast ITN handler), never by
+  // a customer's browser landing on this URL. If they actually completed payment via another tab
+  // despite cancelling here, that will still be reflected correctly on /account/orders.
+  const paymentCancelled = searchParams.get("payment") === "cancelled";
   const lines = useCartStore((state) => state.lines);
   const clearCart = useCartStore((state) => state.clear);
   const [step, setStep] = useState<Step>("details");
@@ -232,6 +239,20 @@ export default function CheckoutPage() {
     <div className="container-content py-10 md:py-14">
       <h1 className="text-2xl font-semibold sm:text-3xl">Secure Checkout</h1>
 
+      {paymentCancelled && (
+        <div className="mt-6 flex items-start gap-3 border border-line bg-mist px-5 py-4">
+          <AlertCircle size={18} className="mt-0.5 shrink-0 text-secondary" />
+          <p className="text-sm text-ink-500">
+            Payment was cancelled before completing. Nothing was charged. If you believe you did
+            complete payment, check{" "}
+            <Link href="/account/orders" className="font-medium text-ink underline underline-offset-4">
+              your order status
+            </Link>{" "}
+            — otherwise, feel free to try again below.
+          </p>
+        </div>
+      )}
+
       <div className="mt-8 flex items-center gap-2">
         {steps.map((item, index) => (
           <div key={item.key} className="flex flex-1 items-center gap-2">
@@ -317,5 +338,13 @@ export default function CheckoutPage() {
         </aside>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={null}>
+      <CheckoutContent />
+    </Suspense>
   );
 }
