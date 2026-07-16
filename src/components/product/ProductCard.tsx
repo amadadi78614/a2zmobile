@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Heart, Star } from "lucide-react";
 import { Product } from "@/lib/types";
 import { cn, discountPercent, formatZAR } from "@/lib/utils";
 import { useWishlistStore } from "@/lib/store/wishlist";
 import { useCartStore } from "@/lib/store/cart";
+import { getStockStatus } from "@/lib/product";
+import { ProductImage } from "@/components/ui/ProductImage";
 
 const badgeStyles: Record<string, string> = {
   New: "bg-ink text-paper",
@@ -20,29 +21,41 @@ export function ProductCard({ product }: { product: Product }) {
   const toggleWishlist = useWishlistStore((s) => s.toggle);
   const addItem = useCartStore((s) => s.addItem);
   const off = discountPercent(product.price, product.compareAtPrice);
+  const stockStatus = getStockStatus(product);
+  const outOfStock = stockStatus === "out-of-stock";
 
   return (
     <div className="group relative flex flex-col">
       <div className="relative aspect-[4/5] overflow-hidden bg-mist">
         <Link href={`/product/${product.slug}`} className="block h-full w-full">
-          <Image
+          <ProductImage
             src={product.images[0]}
             alt={product.title}
             fill
             sizes="(max-width: 768px) 50vw, 25vw"
-            className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+            containerClassName="h-full w-full"
+            className={cn(
+              "object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]",
+              outOfStock && "grayscale"
+            )}
           />
         </Link>
 
-        {product.badge && (
-          <span
-            className={cn(
-              "absolute left-3 top-3 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide",
-              badgeStyles[product.badge]
-            )}
-          >
-            {product.badge}
+        {outOfStock ? (
+          <span className="absolute left-3 top-3 bg-ink/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-paper">
+            Out of Stock
           </span>
+        ) : (
+          product.badge && (
+            <span
+              className={cn(
+                "absolute left-3 top-3 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide",
+                badgeStyles[product.badge]
+              )}
+            >
+              {product.badge}
+            </span>
+          )
         )}
 
         <button
@@ -58,9 +71,10 @@ export function ProductCard({ product }: { product: Product }) {
 
         <button
           onClick={() => addItem(product.id)}
-          className="absolute inset-x-0 bottom-0 translate-y-0 bg-ink py-3 text-center text-xs font-medium uppercase tracking-wide text-paper transition-transform duration-300 ease-out md:translate-y-full md:group-hover:translate-y-0 md:group-focus-within:translate-y-0"
+          disabled={outOfStock}
+          className="absolute inset-x-0 bottom-0 translate-y-0 bg-ink py-3 text-center text-xs font-medium uppercase tracking-wide text-paper transition-transform duration-300 ease-out disabled:cursor-not-allowed disabled:bg-ink-400 md:translate-y-full md:group-hover:translate-y-0 md:group-focus-within:translate-y-0"
         >
-          Add to Cart
+          {outOfStock ? "Out of Stock" : "Add to Cart"}
         </button>
       </div>
 

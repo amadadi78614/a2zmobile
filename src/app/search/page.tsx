@@ -130,9 +130,28 @@ function SearchContent() {
           )}
 
           {!pending && results.length === 0 && (
-            <p className="text-sm text-ink-400">
-              No matches. Try a different term, check the spelling, or search by SKU.
-            </p>
+            <div className="flex flex-col items-center py-12 text-center">
+              <SearchIcon size={28} className="text-ink-300" strokeWidth={1.5} />
+              <p className="mt-4 text-sm text-ink-400">
+                No matches for &ldquo;{query}&rdquo;. Try a different term, check the spelling, or search by SKU.
+              </p>
+              {popular.length > 0 && (
+                <div className="mt-6">
+                  <span className="eyebrow">Try one of these instead</span>
+                  <div className="mt-3 flex flex-wrap justify-center gap-2">
+                    {popular.slice(0, 5).map((r) => (
+                      <button
+                        key={r}
+                        onClick={() => commitSearch(r)}
+                        className="border border-line px-3 py-1.5 text-xs text-ink-500 hover:border-ink"
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}

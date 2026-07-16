@@ -1,22 +1,58 @@
 "use client";
 
 import { useState } from "react";
-import { Star, Heart, MessageCircle, Minus, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Star, Heart, MessageCircle, Minus, Plus, Share2, Check } from "lucide-react";
 import { Product } from "@/lib/types";
 import { cn, discountPercent, formatZAR } from "@/lib/utils";
 import { useCartStore } from "@/lib/store/cart";
 import { useWishlistStore } from "@/lib/store/wishlist";
+import { getStockStatus } from "@/lib/product";
 
-export function ProductPurchasePanel({ product }: { product: Product }) {
+export function ProductPurchasePanel({
+  product,
+  onColorwayChange,
+}: {
+  product: Product;
+  /** Called with the resolved image index for the selected colourway, if (and only if) a real
+   * colorwayImages mapping exists for it — see the type definition for why this isn't guessed. */
+  onColorwayChange?: (imageIndex: number | null) => void;
+}) {
+  const router = useRouter();
   const [colorway, setColorway] = useState(product.colorway?.[0]);
   const [qty, setQty] = useState(1);
+  const [copied, setCopied] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
   const wishlisted = useWishlistStore((s) => s.has(product.id));
   const toggleWishlist = useWishlistStore((s) => s.toggle);
   const off = discountPercent(product.price, product.compareAtPrice);
+  const stockStatus = getStockStatus(product);
   const whatsappHref = `https://wa.me/27000000000?text=${encodeURIComponent(
     `Hi A2Z, I'd like to enquire about the ${product.title} (${product.sku}).`
   )}`;
+
+  function selectColorway(c: string) {
+    setColorway(c);
+    const mappedUrl = product.colorwayImages?.[c];
+    const mappedIndex = mappedUrl ? product.images.indexOf(mappedUrl) : -1;
+    onColorwayChange?.(mappedIndex >= 0 ? mappedIndex : null);
+  }
+
+  function handleShare() {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    if (navigator.share) {
+      navigator.share({ title: product.title, url }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
+
+  function handleBuyNow() {
+    Array.from({ length: qty }).forEach(() => addItem(product.id, colorway));
+    router.push("/cart");
+  }
 
   return (
     <div className="flex flex-col">
@@ -52,9 +88,9 @@ export function ProductPurchasePanel({ product }: { product: Product }) {
       </p>
 
       <p className="mt-4 text-sm">
-        {product.stock > 5 ? (
+        {stockStatus === "in-stock" ? (
           <span className="text-ink-500">In Stock &middot; Ready to ship</span>
-        ) : product.stock > 0 ? (
+        ) : stockStatus === "low-stock" ? (
           <span className="font-medium text-secondary">Only {product.stock} left in stock</span>
         ) : (
           <span className="font-medium text-ink-400">Out of Stock</span>
@@ -68,7 +104,7 @@ export function ProductPurchasePanel({ product }: { product: Product }) {
             {product.colorway.map((c) => (
               <button
                 key={c}
-                onClick={() => setColorway(c)}
+                onClick={() => selectColorway(c)}
                 className={cn(
                   "border px-4 py-2 text-xs font-medium",
                   colorway === c ? "border-ink bg-ink text-paper" : "border-line text-ink-500 hover:border-ink"
@@ -92,7 +128,7 @@ export function ProductPurchasePanel({ product }: { product: Product }) {
           </button>
           <span className="w-8 text-center text-sm font-medium">{qty}</span>
           <button
-            onClick={() => setQty((q) => q + 1)}
+            onClick={() => setQty((q) => Math.min(product.stock, q + 1))}
             className="p-3 text-ink-500 hover:text-ink"
             aria-label="Increase quantity"
           >
@@ -102,7 +138,7 @@ export function ProductPurchasePanel({ product }: { product: Product }) {
 
         <button
           onClick={() => Array.from({ length: qty }).forEach(() => addItem(product.id, colorway))}
-          disabled={product.stock === 0}
+          disabled={stockStatus === "out-of-stock"}
           className="btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Add to Cart
@@ -115,7 +151,23 @@ export function ProductPurchasePanel({ product }: { product: Product }) {
         >
           <Heart size={18} className={wishlisted ? "fill-secondary text-secondary" : "text-ink-500"} />
         </button>
+
+        <button
+          onClick={handleShare}
+          aria-label="Share this product"
+          className="border border-line p-3.5 hover:border-ink"
+        >
+          {copied ? <Check size={18} className="text-secondary" /> : <Share2 size={18} className="text-ink-500" />}
+        </button>
       </div>
+
+      <button
+        onClick={handleBuyNow}
+        disabled={stockStatus === "out-of-stock"}
+        className="btn-secondary mt-3 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Buy Now
+      </button>
 
       <a
         href={whatsappHref}

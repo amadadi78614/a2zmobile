@@ -29,6 +29,13 @@ export type Product = {
   reviewCount: number;
   badge?: "New" | "Sale" | "Best Seller" | "Low Stock";
   colorway?: string[];
+  /** Explicit colourway -> image URL mapping, for when real per-swatch photography exists.
+   * Deliberately NOT populated from a positional guess (images[i] <-> colorway[i]) anywhere in
+   * the current mock catalog — most products have far fewer images than colourways, and the
+   * existing images are undifferentiated placeholder graphics, not real per-colour photos. A
+   * confident-looking wrong photo is worse than the gallery honestly not changing on colour
+   * select. Populate this per-product once real photography exists. */
+  colorwayImages?: Record<string, string>;
   shortDescription: string;
   description: string;
   specs: { label: string; value: string }[];
@@ -216,5 +223,27 @@ export type DeviceModel = {
 export type SearchResult = {
   product: Product;
   matchType: "exact_sku_barcode" | "fulltext" | "trigram";
+};
+
+// ---------- Sprint 3: reviews (frontend framework only, no backend/submission yet) ----------
+
+export type Review = {
+  id: string;
+  productId: string;
+  authorName: string;
+  rating: number;
+  title: string;
+  body: string;
+  createdAt: string;
+  verifiedPurchase: boolean;
+  /** Ready for photo reviews whenever real customer photos exist — deliberately empty in the
+   * current mock data rather than filled with placeholder images passed off as real. */
+  photos: string[];
+};
+
+export type ReviewSummary = {
+  average: number;
+  count: number;
+  breakdown: { stars: 1 | 2 | 3 | 4 | 5; count: number }[];
 };
 

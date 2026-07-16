@@ -522,3 +522,26 @@ export function getRelatedProducts(product: Product, limit = 4) {
     .filter((p) => p.id !== product.id && p.categorySlug === product.categorySlug)
     .slice(0, limit);
 }
+
+/** Rule-based stand-in for real order-correlation data (no order history exists to mine yet).
+ * Deliberately a DIFFERENT signal from getRelatedProducts (same-category only) — this prioritises
+ * same-brand products across ANY category first, falling back to same-category. With a catalog
+ * this small, "same category, just re-sorted" would produce the identical set as Related Products
+ * on almost every product; cross-category-by-brand at least has a chance of surfacing something
+ * genuinely different (e.g. an A2Z Essentials repair-parts product suggesting A2Z Essentials
+ * hookah items). For single-category brands this will still collapse to the same set as Related
+ * — an honest limitation of a 22-product mock catalog, not something to paper over by faking
+ * cross-category associations that don't exist. */
+export function getCustomersAlsoBought(product: Product, limit = 4) {
+  const sameBrand = products
+    .filter((p) => p.id !== product.id && p.brand === product.brand)
+    .sort((a, b) => b.reviewCount - a.reviewCount);
+
+  if (sameBrand.length >= limit) return sameBrand.slice(0, limit);
+
+  const sameCategory = products.filter(
+    (p) => p.id !== product.id && p.categorySlug === product.categorySlug && !sameBrand.includes(p)
+  );
+
+  return [...sameBrand, ...sameCategory].slice(0, limit);
+}

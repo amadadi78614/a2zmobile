@@ -7,4 +7,5 @@ export const brands: Brand[] = [
   { id: "b4", slug: "hoco", name: "Hoco", logo: "/images/brand-hoco.svg" },
   { id: "b5", slug: "oraimo", name: "Oraimo", logo: "/images/brand-oraimo.svg" },
   { id: "b6", slug: "romoss", name: "Romoss", logo: "/images/brand-romoss.svg" },
+  { id: "b7", slug: "a2z-essentials", name: "A2Z Essentials", logo: "/images/brand-a2z-essentials.svg" },
 ];

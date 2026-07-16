@@ -43,9 +43,12 @@ export function SortBar({
           className="border border-line bg-transparent px-3 py-2 text-sm outline-none"
         >
           <option value="featured">Featured</option>
+          <option value="newest">Newest</option>
           <option value="price-asc">Price: Low to High</option>
           <option value="price-desc">Price: High to Low</option>
-          <option value="rating">Top Rated</option>
+          <option value="best-selling">Best Selling</option>
+          <option value="rating">Highest Rated</option>
+          <option value="alphabetical">Alphabetical</option>
         </select>
         <div className="hidden items-center gap-1 sm:flex">
           <button

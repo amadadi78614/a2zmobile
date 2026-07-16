@@ -90,6 +90,12 @@ function ShopContent() {
     if (sort === "price-asc") list = [...list].sort((a, b) => a.price - b.price);
     if (sort === "price-desc") list = [...list].sort((a, b) => b.price - a.price);
     if (sort === "rating") list = [...list].sort((a, b) => b.rating - a.rating);
+    // "Newest" has no real createdAt field to sort by (mock catalog, no fabricated dates) —
+    // reverse catalog order is an honest proxy: doesn't claim a false date, just an order.
+    if (sort === "newest") list = [...list].reverse();
+    if (sort === "alphabetical") list = [...list].sort((a, b) => a.title.localeCompare(b.title));
+    // reviewCount as a popularity proxy — no real sales-volume data exists to sort by yet.
+    if (sort === "best-selling") list = [...list].sort((a, b) => b.reviewCount - a.reviewCount);
     return list;
   }, [category, brands, activeBand, availability, sort]);
 
