@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getProductBySlug, getRelatedProducts, getCustomersAlsoBought } from "@/lib/data/products";
+import { getProductBySlug, getRelatedProducts, getCustomersAlsoBought } from "@/lib/products/queries";
 import { getReviewsForProduct, getReviewSummary } from "@/lib/data/reviews";
 import { ProductGalleryAndPanel } from "@/components/product/ProductGalleryAndPanel";
 import { ProductRail } from "@/components/home/ProductRail";
@@ -9,9 +9,11 @@ import { RecentlyViewedRail } from "@/components/product/RecentlyViewedRail";
 import { RecordProductView } from "@/components/product/RecordProductView";
 import { Truck, ShieldCheck, RotateCcw } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlug(slug);
   if (!product) return {};
   return {
     title: product.title,
@@ -21,10 +23,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlug(slug);
   if (!product) notFound();
-  const related = getRelatedProducts(product);
-  const alsoBought = getCustomersAlsoBought(product).filter((p) => !related.some((r) => r.id === p.id));
+  const [related, allBought] = await Promise.all([
+    getRelatedProducts(product),
+    getCustomersAlsoBought(product),
+  ]);
+  const alsoBought = allBought.filter((p) => !related.some((r) => r.id === p.id));
   const reviews = getReviewsForProduct(product.id);
   const reviewSummary = getReviewSummary(product.id);
   const compatible = product.compatibleDevices ?? product.compatibility ?? [];

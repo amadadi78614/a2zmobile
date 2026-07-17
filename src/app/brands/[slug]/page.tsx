@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { brands } from "@/lib/data/brands";
-import { products } from "@/lib/data/products";
+import { getProductsByBrand } from "@/lib/products/queries";
 import { ProductCard } from "@/components/product/ProductCard";
 import { isBestSeller, isDealItem } from "@/lib/product";
 
@@ -17,9 +17,7 @@ const brandDescriptions: Record<string, string> = {
   "a2z-essentials": "A2Z's own house brand — repair parts, hookah essentials, and everyday accessories we stand behind directly.",
 };
 
-export function generateStaticParams() {
-  return brands.map((b) => ({ slug: b.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -36,7 +34,7 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
   const brand = brands.find((b) => b.slug === slug);
   if (!brand) notFound();
 
-  const brandProducts = products.filter((p) => p.brand === brand.name);
+  const { products: brandProducts } = await getProductsByBrand(brand.slug, { limit: 100 });
   const featured = brandProducts.filter((p) => isBestSeller(p) || isDealItem(p)).slice(0, 4);
 
   return (

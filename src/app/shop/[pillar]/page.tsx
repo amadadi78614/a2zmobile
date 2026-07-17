@@ -1,14 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { taxonomy, getPillar } from "@/lib/data/taxonomy";
+import { getPillar } from "@/lib/data/taxonomy";
 import { GroupCard } from "@/components/shop/GroupCard";
 import { CategoryLanding } from "@/components/shop/CategoryLanding";
-import { productsForGroup } from "@/lib/taxonomyProducts";
+import { getProductsForGroup } from "@/lib/taxonomyProducts";
 import { Breadcrumbs } from "@/components/shop/Breadcrumbs";
 
-export function generateStaticParams() {
-  return taxonomy.map((p) => ({ pillar: p.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ pillar: string }> }): Promise<Metadata> {
   const { pillar: pillarSlug } = await params;
@@ -21,15 +19,8 @@ export async function generateMetadata({ params }: { params: Promise<{ pillar: s
   };
 }
 
-export default async function PillarPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ pillar: string }>;
-  searchParams: Promise<{ subcategory?: string }>;
-}) {
+export default async function PillarPage({ params }: { params: Promise<{ pillar: string }> }) {
   const { pillar: pillarSlug } = await params;
-  const { subcategory } = await searchParams;
   const pillar = getPillar(pillarSlug);
   if (!pillar) notFound();
 
@@ -37,8 +28,7 @@ export default async function PillarPage({
   // to choose between, so go straight to the category content.
   if (pillar.groups.length === 1) {
     const group = pillar.groups[0];
-    const activeSubcategory = subcategory;
-    const items = productsForGroup(group, activeSubcategory);
+    const items = await getProductsForGroup(group);
     return (
       <CategoryLanding
         breadcrumbs={[{ label: "Shop", href: "/shop" }, { label: pillar.name }]}
@@ -46,8 +36,7 @@ export default async function PillarPage({
         description={pillar.heroDescription}
         visualStyle={pillar.visualStyle}
         isLive={pillar.isLive}
-        subcategories={group.subcategories}
-        activeSubcategory={activeSubcategory}
+        subcategories={[]}
         subcategoryBaseHref={`/shop/${pillar.slug}`}
         products={items}
       />

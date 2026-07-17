@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Building2, CheckCircle2, CreditCard, Store, Truck, AlertCircle } from "lucide-react";
 import { useCartStore } from "@/lib/store/cart";
-import { products } from "@/lib/data/products";
+import { useHydratedProducts } from "@/lib/products/useHydratedProducts";
 import { createClient } from "@/lib/supabase/client";
 import { cn, formatZAR } from "@/lib/utils";
 
@@ -82,11 +82,14 @@ function CheckoutContent() {
     loadCustomer();
   }, []);
 
+  const productIds = useMemo(() => lines.map((line) => line.productId), [lines]);
+  const { products: hydratedProducts, state: hydrationState } = useHydratedProducts(productIds);
+
   const items = useMemo(
     () => lines
-      .map((line) => ({ line, product: products.find((product) => product.id === line.productId) }))
-      .filter((item): item is { line: typeof lines[number]; product: (typeof products)[number] } => Boolean(item.product)),
-    [lines]
+      .map((line) => ({ line, product: hydratedProducts.find((product) => product.id === line.productId) }))
+      .filter((item): item is { line: typeof lines[number]; product: (typeof hydratedProducts)[number] } => Boolean(item.product)),
+    [lines, hydratedProducts]
   );
 
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.line.quantity, 0);
@@ -176,6 +179,27 @@ function CheckoutContent() {
       setError(caught instanceof Error ? caught.message : "Checkout failed. Please try again.");
       setPlacing(false);
     }
+  }
+
+  if (hydrationState === "loading") {
+    return (
+      <div className="container-content flex flex-col items-center py-24 text-center">
+        <div className="h-8 w-8 animate-pulse rounded-full bg-line" aria-hidden />
+        <p className="mt-4 text-sm text-ink-400">Loading your cart…</p>
+      </div>
+    );
+  }
+
+  if (hydrationState === "error") {
+    return (
+      <div className="container-content flex flex-col items-center py-24 text-center">
+        <h1 className="text-2xl font-semibold">Couldn&apos;t load your cart</h1>
+        <p className="mt-2 max-w-sm text-sm text-ink-400">
+          We&apos;re having trouble reaching the store right now — this isn&apos;t a problem with
+          your cart. Please try refreshing in a moment.
+        </p>
+      </div>
+    );
   }
 
   if (items.length === 0) {

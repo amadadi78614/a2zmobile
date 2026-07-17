@@ -1,37 +1,12 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import { Product, SearchResult } from "@/lib/types";
+import { SearchResult } from "@/lib/types";
 import { mockSearchProducts } from "@/lib/search/mock-search";
+import { rowToProduct, PRODUCT_SELECT } from "@/lib/products/mapper";
 
 const SUPABASE_CONFIGURED = Boolean(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
-
-function rowToProduct(row: Record<string, unknown>): Product {
-  return {
-    id: row.id as string,
-    slug: row.slug as string,
-    title: row.title as string,
-    brand: ((row.brands as { name?: string } | null)?.name) ?? "",
-    categorySlug: ((row.categories as { slug?: string } | null)?.slug) ?? "",
-    price: Number(row.price),
-    compareAtPrice: row.compare_at_price ? Number(row.compare_at_price) : undefined,
-    images: (row.product_images as { url: string }[] | undefined)?.map((i) => i.url) ?? [],
-    sku: row.sku as string,
-    barcode: (row.barcode as string) ?? undefined,
-    stock: Number(row.stock),
-    rating: Number(row.rating ?? 0),
-    reviewCount: Number(row.review_count ?? 0),
-    badge: row.badge as Product["badge"],
-    colorway: (row.colorways as string[]) ?? [],
-    shortDescription: (row.short_description as string) ?? "",
-    description: (row.description as string) ?? "",
-    specs: (row.specs as { label: string; value: string }[]) ?? [],
-    warranty: (row.warranty as string) ?? "",
-    tags: (row.tags as string[]) ?? [],
-    searchKeywords: (row.search_keywords as string[]) ?? [],
-  };
-}
 
 /**
  * Ranked product search. Calls the `search_products()` Postgres function
@@ -63,7 +38,7 @@ export async function searchProducts(query: string, limit = 24): Promise<SearchR
   const ids = ranked.map((r: { product_id: string }) => r.product_id);
   const { data: rows, error: hydrateError } = await supabase
     .from("products")
-    .select("*, brands(name, slug), categories(slug), product_images(url, is_primary, position)")
+    .select(PRODUCT_SELECT)
     .in("id", ids);
 
   if (hydrateError || !rows) return [];

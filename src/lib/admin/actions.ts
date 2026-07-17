@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { assertAdminRole } from "@/lib/admin/auth";
 import { writeAuditLog } from "@/lib/admin/audit";
@@ -99,6 +99,7 @@ export async function createProduct(input: unknown): Promise<ActionResult<{ id: 
   });
 
   revalidatePath("/admin/products");
+  revalidateTag("products"); // bust the customer-facing product cache too (Critical Fix 2)
   return { success: true, data: { id: data.id } };
 }
 
@@ -142,6 +143,7 @@ export async function updateProduct(id: string, input: unknown): Promise<ActionR
   });
 
   revalidatePath("/admin/products");
+  revalidateTag("products"); // bust the customer-facing product cache too (Critical Fix 2)
   revalidatePath(`/admin/products/${id}/edit`);
   return { success: true, data: undefined };
 }
@@ -172,6 +174,7 @@ export async function deleteProduct(id: string): Promise<ActionResult> {
   });
 
   revalidatePath("/admin/products");
+  revalidateTag("products"); // bust the customer-facing product cache too (Critical Fix 2)
   return { success: true, data: undefined };
 }
 
@@ -204,6 +207,7 @@ export async function setProductStatus(
   });
 
   revalidatePath("/admin/products");
+  revalidateTag("products"); // bust the customer-facing product cache too (Critical Fix 2)
   return { success: true, data: undefined };
 }
 
@@ -245,6 +249,7 @@ export async function duplicateProduct(id: string): Promise<ActionResult<{ id: s
   });
 
   revalidatePath("/admin/products");
+  revalidateTag("products"); // bust the customer-facing product cache too (Critical Fix 2)
   return { success: true, data: { id: data.id } };
 }
 
@@ -274,6 +279,7 @@ export async function bulkDeleteProducts(input: unknown): Promise<ActionResult> 
   });
 
   revalidatePath("/admin/products");
+  revalidateTag("products"); // bust the customer-facing product cache too (Critical Fix 2)
   return { success: true, data: undefined };
 }
 
@@ -301,6 +307,7 @@ export async function bulkUpdateStatus(input: unknown): Promise<ActionResult> {
   });
 
   revalidatePath("/admin/products");
+  revalidateTag("products"); // bust the customer-facing product cache too (Critical Fix 2)
   return { success: true, data: undefined };
 }
 
@@ -359,6 +366,7 @@ export async function bulkUpdatePrice(input: unknown): Promise<ActionResult> {
   });
 
   revalidatePath("/admin/products");
+  revalidateTag("products"); // bust the customer-facing product cache too (Critical Fix 2)
   return { success: true, data: undefined };
 }
 
@@ -398,6 +406,7 @@ export async function bulkUpdateStock(input: unknown): Promise<ActionResult> {
   });
 
   revalidatePath("/admin/products");
+  revalidateTag("products"); // bust the customer-facing product cache too (Critical Fix 2)
   return { success: true, data: undefined };
 }
 
@@ -433,6 +442,7 @@ export async function bulkUpdateCategory(input: unknown): Promise<ActionResult> 
   });
 
   revalidatePath("/admin/products");
+  revalidateTag("products"); // bust the customer-facing product cache too (Critical Fix 2)
   return { success: true, data: undefined };
 }
 
@@ -538,6 +548,7 @@ export async function importProductsCsv(
   });
 
   revalidatePath("/admin/products");
+  revalidateTag("products"); // bust the customer-facing product cache too (Critical Fix 2)
   return { success: true, data: { created, updated, errors } };
 }
 

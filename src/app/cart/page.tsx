@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Minus, Plus, X } from "lucide-react";
+import { Minus, Plus, X, ServerCrash } from "lucide-react";
 import { useCartStore } from "@/lib/store/cart";
-import { products } from "@/lib/data/products";
+import { useHydratedProducts } from "@/lib/products/useHydratedProducts";
 import { formatZAR } from "@/lib/utils";
 
 export default function CartPage() {
@@ -12,11 +12,40 @@ export default function CartPage() {
   const setQuantity = useCartStore((s) => s.setQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
 
+  // The browser only ever stores product IDs + quantity + colourway (line.productId etc.) — every
+  // displayed title/image/price below comes fresh from Supabase on each render, never from
+  // anything cached in localStorage. This is "never trust stale prices stored in the browser" in
+  // practice.
+  const productIds = lines.map((l) => l.productId);
+  const { products, state } = useHydratedProducts(productIds);
+
   const items = lines
     .map((line) => ({ line, product: products.find((p) => p.id === line.productId) }))
-    .filter((i) => i.product);
+    .filter((i): i is { line: typeof lines[number]; product: NonNullable<typeof i.product> } => Boolean(i.product));
 
-  const subtotal = items.reduce((sum, i) => sum + i.product!.price * i.line.quantity, 0);
+  const subtotal = items.reduce((sum, i) => sum + i.product.price * i.line.quantity, 0);
+
+  if (state === "error") {
+    return (
+      <div className="container-content flex flex-col items-center py-24 text-center">
+        <ServerCrash size={40} className="text-ink-300" strokeWidth={1.5} />
+        <h1 className="mt-6 text-2xl font-semibold">Couldn&apos;t load your cart</h1>
+        <p className="mt-2 max-w-sm text-sm text-ink-400">
+          We&apos;re having trouble reaching the store right now — this isn&apos;t a problem with
+          your cart, please try refreshing in a moment.
+        </p>
+      </div>
+    );
+  }
+
+  if (state === "loading") {
+    return (
+      <div className="container-content py-10 md:py-14">
+        <h1 className="text-2xl font-semibold sm:text-3xl">Shopping Cart</h1>
+        <div className="mt-10 animate-pulse text-sm text-ink-400">Loading your cart…</div>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -39,13 +68,13 @@ export default function CartPage() {
           {items.map(({ line, product }) => (
             <div key={`${line.productId}-${line.colorway}`} className="flex gap-5 py-6">
               <div className="relative h-24 w-24 shrink-0 overflow-hidden bg-mist">
-                <Image src={product!.images[0]} alt={product!.title} fill sizes="96px" className="object-cover" />
+                <Image src={product.images[0]} alt={product.title} fill sizes="96px" className="object-cover" />
               </div>
               <div className="flex flex-1 flex-col">
                 <div className="flex items-start justify-between">
                   <div>
-                    <Link href={`/product/${product!.slug}`} className="text-sm font-medium hover:underline">
-                      {product!.title}
+                    <Link href={`/product/${product.slug}`} className="text-sm font-medium hover:underline">
+                      {product.title}
                     </Link>
                     {line.colorway && <p className="mt-1 text-xs text-ink-400">Colour: {line.colorway}</p>}
                   </div>
@@ -75,7 +104,7 @@ export default function CartPage() {
                     </button>
                   </div>
                   <span className="text-sm font-semibold">
-                    {formatZAR(product!.price * line.quantity)}
+                    {formatZAR(product.price * line.quantity)}
                   </span>
                 </div>
               </div>

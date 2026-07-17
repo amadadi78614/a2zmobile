@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRecentlyViewedStore } from "@/lib/store/recentlyViewed";
-import { products } from "@/lib/data/products";
+import { useHydratedProducts } from "@/lib/products/useHydratedProducts";
 import { ProductRail } from "@/components/home/ProductRail";
 
 export function RecentlyViewedRail({ excludeProductId }: { excludeProductId?: string }) {
@@ -11,16 +11,13 @@ export function RecentlyViewedRail({ excludeProductId }: { excludeProductId?: st
 
   useEffect(() => setMounted(true), []);
 
-  // Avoid a hydration mismatch — localStorage-backed state isn't known on the server render.
-  if (!mounted) return null;
+  const idsToHydrate = productIds.filter((id) => id !== excludeProductId).slice(0, 8);
+  const { products: items, state } = useHydratedProducts(idsToHydrate);
 
-  const items = productIds
-    .filter((id) => id !== excludeProductId)
-    .map((id) => products.find((p) => p.id === id))
-    .filter((p): p is (typeof products)[number] => Boolean(p))
-    .slice(0, 8);
-
-  if (items.length === 0) return null;
+  // Avoid a hydration mismatch (localStorage-backed state isn't known on the server render), and
+  // fail silently on error — recently-viewed is a nice-to-have rail, not worth a visible error
+  // state of its own.
+  if (!mounted || state !== "ready" || items.length === 0) return null;
 
   return <ProductRail eyebrow="Your History" title="Recently Viewed" products={items} />;
 }

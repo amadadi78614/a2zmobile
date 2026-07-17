@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { taxonomy, getPillar, getGroup } from "@/lib/data/taxonomy";
+import { getPillar, getGroup } from "@/lib/data/taxonomy";
 import { CategoryLanding } from "@/components/shop/CategoryLanding";
-import { productsForGroup } from "@/lib/taxonomyProducts";
+import { getProductsForGroup } from "@/lib/taxonomyProducts";
 
-export function generateStaticParams() {
-  return taxonomy.flatMap((pillar) => pillar.groups.map((group) => ({ pillar: pillar.slug, group: group.slug })));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -29,19 +27,15 @@ export async function generateMetadata({
 
 export default async function GroupPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ pillar: string; group: string }>;
-  searchParams: Promise<{ subcategory?: string }>;
 }) {
   const { pillar: pillarSlug, group: groupSlug } = await params;
-  const { subcategory } = await searchParams;
   const pillar = getPillar(pillarSlug);
   const group = getGroup(pillarSlug, groupSlug);
   if (!pillar || !group) notFound();
 
-  const activeSubcategory = subcategory;
-  const items = productsForGroup(group, activeSubcategory);
+  const items = await getProductsForGroup(group);
 
   return (
     <CategoryLanding
@@ -54,8 +48,7 @@ export default async function GroupPage({
       description={group.heroDescription}
       visualStyle={pillar.visualStyle}
       isLive={pillar.isLive}
-      subcategories={group.subcategories}
-      activeSubcategory={activeSubcategory}
+      subcategories={[]}
       subcategoryBaseHref={`/shop/${pillar.slug}/${group.slug}`}
       products={items}
     />
