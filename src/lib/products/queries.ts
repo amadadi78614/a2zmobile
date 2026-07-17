@@ -106,20 +106,26 @@ export const getNewArrivals = unstable_cache(
 export const getDeals = unstable_cache(
   async (limit = 8): Promise<Product[]> => {
     const supabase = createPublicClient();
-    // compare_at_price > price, expressed as a Postgres filter since supabase-js's query
-    // builder has no direct "column > column" comparator.
+    // compare_at_price > price can't be expressed as a PostgREST filter — .filter() only
+    // compares a column against a literal value, not against another column (confirmed live:
+    // it was silently trying to parse the string "price" as a number and failing). Fetch
+    // everything with a compare_at_price set, then filter for genuine deals client-side.
+    // Fetches a wider batch than `limit` since not every compare_at_price is necessarily higher
+    // than price (bad data entry shouldn't surface as a false "deal").
     const { data, error } = await supabase
       .from("products")
       .select(PRODUCT_SELECT)
       .is("deleted_at", null)
       .eq("status", "published")
       .not("compare_at_price", "is", null)
-      .filter("compare_at_price", "gt", "price")
       .order("updated_at", { ascending: false })
-      .limit(limit);
+      .limit(limit * 3);
 
     if (error) logAndThrow("getDeals", error);
-    return (data ?? []).map(rowToProduct);
+    return ((data ?? []) as unknown as Record<string, unknown>[])
+      .map(rowToProduct)
+      .filter((p) => p.compareAtPrice !== undefined && p.compareAtPrice > p.price)
+      .slice(0, limit);
   },
   ["products:deals"],
   { revalidate: CACHE_REVALIDATE_SECONDS, tags: ["products"] }
