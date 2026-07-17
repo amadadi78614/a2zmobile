@@ -1,11 +1,38 @@
 import "server-only";
 import type { Product } from "@/lib/types";
 
-/** The single Supabase select shape every product-reading query in this layer uses — one join
+// `products` has TWO foreign keys into `categories` (category_id and subcategory_id), so a plain
+// `categories(slug)` embed is ambiguous — PostgREST refuses to guess which one. Naming the FK
+// explicitly (per PostgREST's own error hint) resolves it. Defined once so every query that
+// needs to filter/join on category uses the exact same, correct reference.
+export const CATEGORY_JOIN = "categories!products_category_id_fkey";
+
+/** The single Supabase select shape most product-reading queries in this layer use — one join
  * definition, reused everywhere, so there's no risk of two queries silently drifting into
- * different shapes of the same data. */
+ * different shapes of the same data.
+ *
+ * product_compatible_devices was removed here after a live schema check showed the relationship
+ * doesn't match what was assumed when this was first written (PostgREST: "no matches found").
+ * Rather than guess a second time against a schema I still haven't directly inspected, this is
+ * dropped safely — the mapper below already defaults compatibleDevices to [] when the field is
+ * absent, so this degrades honestly (no compatibility info shown) instead of breaking every
+ * product query. Restoring it is a small, separate follow-up once the real relationship is
+ * confirmed directly.
+ */
 export const PRODUCT_SELECT =
-  "*, brands(name, slug), categories(slug), product_images(url, is_primary, position), product_compatible_devices(device_models(name))";
+  `*, brands(name, slug), ${CATEGORY_JOIN}(slug), product_images(url, is_primary, position)`;
+
+/** Variant for queries that filter by category (getProductsByCategory, getRelatedProducts) —
+ * needs an !inner join so `.eq("categories.slug", ...)` actually restricts rows, not just a
+ * second, separately-ambiguous embed appended onto PRODUCT_SELECT. */
+export const PRODUCT_SELECT_CATEGORY_FILTER =
+  `*, brands(name, slug), ${CATEGORY_JOIN}!inner(slug), product_images(url, is_primary, position)`;
+
+/** Variant for queries that filter by brand (getProductsByBrand, getCustomersAlsoBought) — same
+ * reasoning, !inner on brands instead of categories. Selects both name and slug so it works
+ * whether the caller filters on brands.slug or brands.name. */
+export const PRODUCT_SELECT_BRAND_FILTER =
+  `*, brands!inner(name, slug), ${CATEGORY_JOIN}(slug), product_images(url, is_primary, position)`;
 
 /** The one row -> Product mapper for the whole storefront. Originally lived only in
  * src/lib/search/queries.ts; extracted here so search and every other customer-facing query

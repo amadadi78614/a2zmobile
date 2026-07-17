@@ -1,7 +1,7 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
 import { createPublicClient } from "@/lib/supabase/public";
-import { rowToProduct, PRODUCT_SELECT } from "@/lib/products/mapper";
+import { rowToProduct, PRODUCT_SELECT, PRODUCT_SELECT_CATEGORY_FILTER, PRODUCT_SELECT_BRAND_FILTER } from "@/lib/products/mapper";
 import type { Product } from "@/lib/types";
 
 /** Thrown only when Supabase itself fails (network/connection/query error) — never for a
@@ -151,7 +151,7 @@ export const getProductsByCategory = unstable_cache(
     const supabase = createPublicClient();
     const { data, error, count } = await supabase
       .from("products")
-      .select(PRODUCT_SELECT + ", categories!inner(slug)", { count: "exact" })
+      .select(PRODUCT_SELECT_CATEGORY_FILTER, { count: "exact" })
       .eq("categories.slug", categorySlug)
       .is("deleted_at", null)
       .eq("status", "published")
@@ -173,7 +173,7 @@ export const getProductsByBrand = unstable_cache(
     const supabase = createPublicClient();
     const { data, error, count } = await supabase
       .from("products")
-      .select(PRODUCT_SELECT + ", brands!inner(slug)", { count: "exact" })
+      .select(PRODUCT_SELECT_BRAND_FILTER, { count: "exact" })
       .eq("brands.slug", brandSlug)
       .is("deleted_at", null)
       .eq("status", "published")
@@ -192,7 +192,7 @@ export const getRelatedProducts = unstable_cache(
     const supabase = createPublicClient();
     const { data, error } = await supabase
       .from("products")
-      .select(PRODUCT_SELECT + ", categories!inner(slug)")
+      .select(PRODUCT_SELECT_CATEGORY_FILTER)
       .eq("categories.slug", product.categorySlug)
       .neq("id", product.id)
       .is("deleted_at", null)
@@ -214,7 +214,7 @@ export const getCustomersAlsoBought = unstable_cache(
     // alone doesn't fill the list.
     const { data: sameBrandRows, error: brandError } = await supabase
       .from("products")
-      .select(PRODUCT_SELECT + ", brands!inner(name)")
+      .select(PRODUCT_SELECT_BRAND_FILTER)
       .eq("brands.name", product.brand)
       .neq("id", product.id)
       .is("deleted_at", null)
@@ -229,7 +229,7 @@ export const getCustomersAlsoBought = unstable_cache(
     const excludeIds = [product.id, ...sameBrand.map((p) => p.id)];
     const { data: sameCategoryRows, error: categoryError } = await supabase
       .from("products")
-      .select(PRODUCT_SELECT + ", categories!inner(slug)")
+      .select(PRODUCT_SELECT_CATEGORY_FILTER)
       .eq("categories.slug", product.categorySlug)
       .not("id", "in", `(${excludeIds.join(",")})`)
       .is("deleted_at", null)
